@@ -4,624 +4,457 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>Micra-Cam</title>
-<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
 <style>
 * { margin:0; padding:0; box-sizing:border-box; }
-body { background:#000; overflow:hidden; touch-action:none; }
+body { background:#000; overflow:hidden; }
+canvas { position:fixed; top:0; left:0; display:block; }
 
-/* カメラ映像（最背面） */
-#cam { position:fixed; top:0; left:0; width:100%; height:100%; object-fit:cover; z-index:0; }
-/* Three.jsキャンバス（透明、カメラの上） */
-#cvs { position:fixed; top:0; left:0; z-index:1; display:block; }
-
-.layer { position:fixed; top:0; left:0; width:100%; height:100%; z-index:10; font-family:'Press Start 2P',monospace; }
-
-/* ── スタート画面 ── */
-#start {
-  display:flex; flex-direction:column; align-items:center; justify-content:center;
-  background:linear-gradient(180deg,#1a6e9f 0%,#3399cc 38%,#87CEEB 62%,#5D8A2A 78%,#3a5e10 100%);
+#hud {
+  position:fixed; top:12px; left:12px;
+  font:12px/1.8 monospace; color:#0ff;
+  background:rgba(0,0,0,0.5); padding:6px 10px;
+  pointer-events:none;
 }
-.logo {
-  font-size:clamp(22px,7vw,56px); color:#FF0; letter-spacing:3px;
-  text-shadow:4px 4px 0 #808000, 6px 6px 0 rgba(0,0,0,.3); user-select:none;
+
+/* 起動ボタン（WebXRはユーザー操作が必須） */
+#start-screen {
+  position:fixed; inset:0;
+  display:flex; flex-direction:column;
+  align-items:center; justify-content:center;
+  background:rgba(0,0,0,0.85);
 }
-.sub {
-  font-size:clamp(7px,2vw,11px); color:#fff;
-  text-shadow:2px 2px 0 #000; margin:10px 0 44px; text-align:center; line-height:2;
+#start-screen h1 {
+  font:bold 28px monospace; color:#0f0;
+  text-shadow:0 0 12px #0f0;
+  margin-bottom:8px; letter-spacing:2px;
 }
-.btn {
-  display:block; width:clamp(220px,65vw,400px); padding:13px 10px; margin:5px 0;
-  font-family:'Press Start 2P',monospace; font-size:clamp(9px,2.2vw,13px);
-  color:#fff; text-shadow:2px 2px 0 rgba(0,0,0,.6); text-align:center; cursor:pointer; border:none;
-  background:#838383;
-  border-top:3px solid #c6c6c6; border-left:3px solid #c6c6c6;
-  border-right:3px solid #3d3d3d; border-bottom:3px solid #3d3d3d;
-  -webkit-tap-highlight-color:transparent; text-decoration:none; line-height:normal;
+#start-screen p {
+  font:13px monospace; color:#aaa;
+  margin-bottom:40px; text-align:center; line-height:1.7;
 }
-.btn:active { border-color:#3d3d3d #c6c6c6 #c6c6c6 #3d3d3d; }
-.btn.g { background:#5a832a; border-top-color:#8fbf5a; border-left-color:#8fbf5a; border-right-color:#2a4a10; border-bottom-color:#2a4a10; }
-.btn.r { background:#832a2a; border-top-color:#bf5a5a; border-left-color:#bf5a5a; border-right-color:#4a1010; border-bottom-color:#4a1010; }
-.btn.b { background:#2a5a83; border-top-color:#5a8fbf; border-left-color:#5a8fbf; border-right-color:#102a4a; border-bottom-color:#102a4a; }
-.btn.orange { background:#8a5a00; border-top-color:#c8900a; border-left-color:#c8900a; border-right-color:#3a2000; border-bottom-color:#3a2000; }
-
-#info { font-size:7px; color:rgba(255,255,255,.85); text-align:center; line-height:2.4; margin-top:16px; max-width:300px; }
-
-/* ── HUD ── */
-#hud { display:none; pointer-events:none; }
-
-#status { position:absolute; top:14px; left:50%; transform:translateX(-50%); font-size:9px; color:#fff; background:rgba(0,0,0,.6); border:2px solid rgba(255,255,255,.25); padding:7px 14px; white-space:nowrap; }
-#stat2  { position:absolute; top:48px; left:50%; transform:translateX(-50%); font-size:7px; color:#FA0; background:rgba(0,0,0,.5); padding:4px 10px; }
-
-#overlay { position:absolute; top:14px; left:12px; font-size:8px; color:#5EE; line-height:2.2; background:rgba(0,0,0,.55); padding:8px 12px; }
-
-/* 照準 */
-#aim { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:60px; height:60px; }
-#aim::before,#aim::after { content:''; position:absolute; background:rgba(255,255,255,.8); }
-#aim::before { width:2px; height:100%; left:50%; transform:translateX(-50%); }
-#aim::after  { height:2px; width:100%; top:50%;  transform:translateY(-50%); }
-#aim-ring    { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:80px; height:80px; border:2px solid rgba(0,255,200,.5); border-radius:50%; }
-
-/* 距離パネル */
-#dist-panel {
-  position:absolute; bottom:120px; left:50%; transform:translateX(-50%);
-  background:rgba(0,0,0,.65); border:2px solid rgba(255,255,255,.2);
-  padding:10px 16px; text-align:center; pointer-events:all;
-  white-space:nowrap;
+#start-btn {
+  padding:18px 48px; font:bold 18px monospace;
+  color:#fff; background:#1a6a1a;
+  border:2px solid #3f3; border-radius:4px;
+  cursor:pointer; -webkit-tap-highlight-color:transparent;
 }
-#dist-label { font-size:6px; color:#aaa; display:block; margin-bottom:6px; }
-#dist-range { width:180px; height:20px; cursor:pointer; }
-#dist-val   { font-size:10px; color:#5EE; margin-left:8px; }
+#start-btn:active { background:#0a4a0a; }
 
-/* コントロール */
-#ctrl { position:absolute; bottom:24px; left:50%; transform:translateX(-50%); display:flex; gap:8px; pointer-events:all; flex-wrap:wrap; justify-content:center; }
-
-/* スキャンボタン押下 */
-#btn-scan.on { background:#1a4a1a !important; border-top-color:#0a2a0a !important; border-left-color:#0a2a0a !important; border-right-color:#5ab05a !important; border-bottom-color:#5ab05a !important; }
-
-/* ARリンク（非表示、JS から click()） */
-#ar-link { display:none; }
-
-/* エラー */
-#err { display:none; flex-direction:column; align-items:center; justify-content:center; background:rgba(0,0,0,.93); padding:24px; }
-#err-msg { font-size:9px; color:#F66; text-align:center; line-height:2.3; max-width:300px; margin-bottom:24px; }
-
-/* USDZ生成中オーバーレイ */
-#gen-overlay {
-  position:fixed; top:0; left:0; width:100%; height:100%; z-index:100;
-  background:rgba(0,0,0,.8); display:none; flex-direction:column;
-  align-items:center; justify-content:center; font-family:'Press Start 2P',monospace;
+#error {
+  position:fixed; inset:0;
+  display:none; flex-direction:column;
+  align-items:center; justify-content:center;
+  background:rgba(0,0,0,0.9);
+  font:13px monospace; color:#f66;
+  text-align:center; padding:24px; line-height:2;
 }
-#gen-msg { font-size:10px; color:#5EE; text-align:center; line-height:2; }
 
-@keyframes cld { from{transform:translateX(-150px)} to{transform:translateX(110vw)} }
-.cld { position:absolute; background:#fff; opacity:.88; border-radius:3px; }
+/* 十字照準 */
+#crosshair {
+  position:fixed; top:50%; left:50%;
+  transform:translate(-50%,-50%);
+  width:20px; height:20px;
+  pointer-events:none; display:none;
+}
+#crosshair::before,#crosshair::after {
+  content:''; position:absolute; background:rgba(255,255,255,0.7);
+}
+#crosshair::before { width:2px; height:100%; left:50%; transform:translateX(-50%); }
+#crosshair::after  { height:2px; width:100%; top:50%;  transform:translateY(-50%); }
 </style>
 </head>
 <body>
 
-<video id="cam" autoplay playsinline muted></video>
-<canvas id="cvs"></canvas>
+<canvas id="c"></canvas>
+<div id="hud" style="display:none">
+  BLOCKS: <span id="n">0</span><br>
+  DEPTH:  <span id="d">--</span> m<br>
+  FPS:    <span id="f">--</span>
+</div>
+<div id="crosshair"></div>
 
-<!-- iOS Quick Look AR リンク（非表示） -->
-<a id="ar-link" rel="ar" href="#"></a>
-
-<!-- USDZ生成中表示 -->
-<div id="gen-overlay">
-  <div id="gen-msg">USDZ 生成中...<br><span id="gen-pct">0</span>%</div>
+<div id="start-screen">
+  <h1>MICRA-CAM</h1>
+  <p>LiDAR で空間をスキャンして<br>マイクラ風ブロックに変換します</p>
+  <button id="start-btn">AR スキャン開始</button>
+  <p id="compat" style="margin-top:20px;font:11px monospace;color:#666"></p>
 </div>
 
-<!-- スタート画面 -->
-<div class="layer" id="start">
-  <div id="cld-wrap" style="position:absolute;top:0;left:0;right:0;height:60%;overflow:hidden;pointer-events:none;"></div>
-  <div class="logo">MICRA-CAM</div>
-  <div class="sub">カメラ × MINECRAFT<br><span style="font-size:.75em;color:rgba(255,255,255,.7)">現実空間をマイクラ化</span></div>
-  <button class="btn g" id="btn-begin">▶ スキャン開始</button>
-  <button class="btn"   id="btn-demo" >🎮 デモモード</button>
-  <div id="info">読込み中...</div>
-</div>
+<div id="error"></div>
 
-<!-- HUD -->
-<div class="layer" id="hud">
-  <div id="status">スキャン待機中</div>
-  <div id="stat2">iPhone を向けて ● スキャン を長押し</div>
-  <div id="overlay">
-    BLOCKS: <span id="bcnt">0</span><br>
-    距離: <span id="dval">2.0</span>m<br>
-    FPS: <span id="fps">--</span>
-  </div>
-  <div id="aim"></div>
-  <div id="aim-ring"></div>
-  <div id="dist-panel">
-    <span id="dist-label">← スキャン距離（壁までの距離に合わせる）→</span>
-    <input id="dist-range" type="range" min="0.3" max="5.0" step="0.1" value="2.0">
-    <span id="dist-val">2.0 m</span>
-  </div>
-  <div id="ctrl">
-    <button class="btn g"      id="btn-scan"  style="font-size:8px;padding:10px 12px">● スキャン</button>
-    <button class="btn orange" id="btn-ar"    style="font-size:8px;padding:10px 12px">🥽 ARで見る</button>
-    <button class="btn r"      id="btn-clear" style="font-size:8px;padding:10px 10px">クリア</button>
-    <button class="btn"        id="btn-exit"  style="font-size:8px;padding:10px 10px">終了</button>
-  </div>
-</div>
-
-<!-- エラー -->
-<div class="layer" id="err">
-  <div id="err-msg"></div>
-  <button class="btn" id="btn-eback">← 戻る</button>
-</div>
-
-<!-- JSZip (USDZ packaging) -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-<!-- Three.js -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
-
 <script>
-// ── エラーキャッチ ────────────────────────────────────────────────────────
-window.onerror = function(m,s,l){ setInfo('❌ JS Error: '+m+' (L'+l+')'); };
-window.addEventListener('unhandledrejection',function(e){ setInfo('❌ Async: '+(e.reason&&e.reason.message||e.reason||'?')); });
+'use strict';
 
-function setInfo(h){ var el=document.getElementById('info'); if(el) el.innerHTML=h; }
-function showErr(msg){
-  document.getElementById('err-msg').innerHTML=msg.replace(/\n/g,'<br>');
-  document.getElementById('err').style.display='flex';
+// ─── エラーハンドラ ───────────────────────────────────────────
+window.onerror = function(m,s,l){ showError('JS Error (L'+l+'):\n'+m); };
+window.addEventListener('unhandledrejection', function(e){
+  showError('Error:\n' + (e.reason && e.reason.message || String(e.reason)));
+});
+
+function showError(msg) {
+  var el = document.getElementById('error');
+  el.innerHTML = msg.replace(/\n/g,'<br>');
+  el.style.display = 'flex';
 }
 
-if(typeof THREE==='undefined'){ setInfo('❌ Three.js 読込み失敗<br>ネット接続を確認してください'); }
-else if(typeof JSZip==='undefined'){ setInfo('❌ JSZip 読込み失敗<br>ネット接続を確認してください'); }
-else {
-  setInfo('✅ ライブラリ OK');
-  try { init(); }
-  catch(e){ setInfo('❌ 初期化エラー:<br>'+e.message+'<br>L'+(e.lineNumber||'?')); }
+// ─── ライブラリ確認 ───────────────────────────────────────────
+if (typeof THREE === 'undefined') {
+  showError('Three.js 読み込み失敗\nネット接続を確認してください');
 }
 
-// ═══════════════════════════════════════════════════════════
-//  テクスチャ
-// ═══════════════════════════════════════════════════════════
-function lcg(s){ return function(){ s=(Math.imul(s,1664525)+1013904223)|0; return (s>>>0)/0x100000000; }; }
-function makeTex(fn){
-  var c=document.createElement('canvas'); c.width=c.height=16;
-  fn(c.getContext('2d'));
-  var t=new THREE.CanvasTexture(c);
-  t.magFilter=THREE.NearestFilter; t.minFilter=THREE.NearestFilter; t.generateMipmaps=false;
-  return t;
-}
+// ─── 定数 ─────────────────────────────────────────────────────
+var VOXEL   = 0.20;   // 20 cm
+var MAX_V   = 4000;
+var SKIP    = 6;      // 深度マップのサンプリング間隔（px）
+var PERIOD  = 100;    // スキャン間隔 (ms)
 
-var TEX;
-function buildTex(){
-  var r1=lcg(1),r2=lcg(2),r3=lcg(3),r4=lcg(4),r5=lcg(5),r6=lcg(6),r7=lcg(7),r8=lcg(8),r9=lcg(9);
-  TEX={
-    gt:makeTex(function(ctx){ var pal=[[73,142,36],[58,128,28],[85,155,44],[66,135,32]]; for(var y=0;y<16;y++)for(var x=0;x<16;x++){var c=pal[r1()*4|0];ctx.fillStyle='rgb('+c[0]+','+c[1]+','+c[2]+')';ctx.fillRect(x,y,1,1);} }),
-    gs:makeTex(function(ctx){ for(var y=4;y<16;y++)for(var x=0;x<16;x++){var v=100+r2()*40;ctx.fillStyle='rgb('+(v*.75|0)+','+(v*.52|0)+','+(v*.32|0)+')';ctx.fillRect(x,y,1,1);} for(var y=0;y<4;y++)for(var x=0;x<16;x++){var v=r3();ctx.fillStyle='rgb('+(60+v*25|0)+','+(132+v*22|0)+','+(28+v*16|0)+')';ctx.fillRect(x,y,1,1);} }),
-    di:makeTex(function(ctx){ for(var y=0;y<16;y++)for(var x=0;x<16;x++){var v=108+r4()*38;ctx.fillStyle='rgb('+(v*.75|0)+','+(v*.52|0)+','+(v*.32|0)+')';ctx.fillRect(x,y,1,1);} }),
-    st:makeTex(function(ctx){ for(var y=0;y<16;y++)for(var x=0;x<16;x++){var v=118+r5()*26;ctx.fillStyle='rgb('+(v|0)+','+(v|0)+','+(v|0)+')';ctx.fillRect(x,y,1,1);} ctx.strokeStyle='rgba(70,70,70,.7)';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(2,1);ctx.lineTo(5,5);ctx.lineTo(9,4);ctx.lineTo(12,8);ctx.moveTo(0,10);ctx.lineTo(4,13);ctx.lineTo(8,11);ctx.lineTo(13,15);ctx.stroke(); }),
-    br:makeTex(function(ctx){ ctx.fillStyle='#7a7a7a';ctx.fillRect(0,0,16,16); var bp=[[160,60,38],[148,55,33],[172,66,42]]; for(var row=0;row<4;row++){var off=(row&1)*4;for(var col=-1;col<4;col++){var c=bp[r6()*3|0];ctx.fillStyle='rgb('+c[0]+','+c[1]+','+c[2]+')';ctx.fillRect(col*8+off,row*4,7,3);}} }),
-    sa:makeTex(function(ctx){ for(var y=0;y<16;y++)for(var x=0;x<16;x++){var v=208+r7()*28;ctx.fillStyle='rgb('+(v|0)+','+(v*.94|0)+','+(v*.62|0)+')';ctx.fillRect(x,y,1,1);} }),
-    wp:makeTex(function(ctx){ for(var y=0;y<16;y++){var base=145+Math.floor(y/4)*8;for(var x=0;x<16;x++){var v=base+r8()*16-8;ctx.fillStyle='rgb('+(v*.72|0)+','+(v*.52|0)+','+(v*.26|0)+')';ctx.fillRect(x,y,1,1);}if(y%4===0){ctx.fillStyle='rgba(70,40,10,.4)';ctx.fillRect(0,y,16,1);}} }),
-    lf:makeTex(function(ctx){ for(var y=0;y<16;y++)for(var x=0;x<16;x++){if(r9()>0.12){var v=40+r9()*55;ctx.fillStyle='rgb('+(v*.5|0)+','+(v|0)+','+(v*.3|0)+')';ctx.fillRect(x,y,1,1);}} }),
+// ─── テクスチャ生成 ───────────────────────────────────────────
+function lcg(seed) {
+  var s = seed | 0;
+  return function() {
+    s = (Math.imul(s, 1664525) + 1013904223) | 0;
+    return (s >>> 0) / 0x100000000;
   };
 }
 
-// マテリアル（明示的な変数 — MC[k] クロージャ問題を回避）
-var matGrass, matStone, matDirt, matSand, matBrick, matWood, matLeaf, matFallback;
+function makeTex(fn) {
+  var c = document.createElement('canvas');
+  c.width = c.height = 16;
+  fn(c.getContext('2d'));
+  var t = new THREE.CanvasTexture(c);
+  t.magFilter = THREE.NearestFilter;
+  t.minFilter = THREE.NearestFilter;
+  t.generateMipmaps = false;
+  return t;
+}
 
-function buildMat(){
-  function lm(k){
-    var tex = TEX ? TEX[k] : null;
-    return new THREE.MeshLambertMaterial({map: tex || null});
+function buildTextures() {
+  var r1=lcg(1), r2=lcg(2), r3=lcg(3), r4=lcg(4), r5=lcg(5),
+      r6=lcg(6), r7=lcg(7), r8=lcg(8), r9=lcg(9);
+
+  return {
+    grassTop: makeTex(function(ctx) {
+      var pal = [[73,142,36],[58,128,28],[85,155,44],[66,135,32]];
+      for (var y=0;y<16;y++) for (var x=0;x<16;x++) {
+        var c = pal[r1()*4|0];
+        ctx.fillStyle = 'rgb('+c[0]+','+c[1]+','+c[2]+')';
+        ctx.fillRect(x,y,1,1);
+      }
+    }),
+    grassSide: makeTex(function(ctx) {
+      for (var y=4;y<16;y++) for (var x=0;x<16;x++) {
+        var v = 100+r2()*40;
+        ctx.fillStyle = 'rgb('+(v*.75|0)+','+(v*.52|0)+','+(v*.32|0)+')';
+        ctx.fillRect(x,y,1,1);
+      }
+      for (var y=0;y<4;y++) for (var x=0;x<16;x++) {
+        var v = r3();
+        ctx.fillStyle = 'rgb('+(60+v*25|0)+','+(132+v*22|0)+','+(28+v*16|0)+')';
+        ctx.fillRect(x,y,1,1);
+      }
+    }),
+    dirt: makeTex(function(ctx) {
+      for (var y=0;y<16;y++) for (var x=0;x<16;x++) {
+        var v = 108+r4()*38;
+        ctx.fillStyle = 'rgb('+(v*.75|0)+','+(v*.52|0)+','+(v*.32|0)+')';
+        ctx.fillRect(x,y,1,1);
+      }
+    }),
+    stone: makeTex(function(ctx) {
+      for (var y=0;y<16;y++) for (var x=0;x<16;x++) {
+        var v = 118+r5()*26;
+        ctx.fillStyle = 'rgb('+v+','+v+','+v+')';
+        ctx.fillRect(x,y,1,1);
+      }
+      ctx.strokeStyle = 'rgba(70,70,70,0.7)';
+      ctx.lineWidth = 1; ctx.beginPath();
+      ctx.moveTo(2,1); ctx.lineTo(5,5); ctx.lineTo(9,4); ctx.lineTo(12,8);
+      ctx.moveTo(0,10); ctx.lineTo(4,13); ctx.lineTo(8,11); ctx.lineTo(13,15);
+      ctx.stroke();
+    }),
+    brick: makeTex(function(ctx) {
+      ctx.fillStyle = '#7a7a7a'; ctx.fillRect(0,0,16,16);
+      var bp = [[160,60,38],[148,55,33],[172,66,42]];
+      for (var row=0;row<4;row++) {
+        var off = (row&1)*4;
+        for (var col=-1;col<4;col++) {
+          var c = bp[r6()*3|0];
+          ctx.fillStyle = 'rgb('+c[0]+','+c[1]+','+c[2]+')';
+          ctx.fillRect(col*8+off, row*4, 7, 3);
+        }
+      }
+    }),
+    sand: makeTex(function(ctx) {
+      for (var y=0;y<16;y++) for (var x=0;x<16;x++) {
+        var v = 208+r7()*28;
+        ctx.fillStyle = 'rgb('+(v|0)+','+(v*.94|0)+','+(v*.62|0)+')';
+        ctx.fillRect(x,y,1,1);
+      }
+    }),
+    wood: makeTex(function(ctx) {
+      for (var y=0;y<16;y++) {
+        var base = 145+Math.floor(y/4)*8;
+        for (var x=0;x<16;x++) {
+          var v = base+r8()*16-8;
+          ctx.fillStyle = 'rgb('+(v*.72|0)+','+(v*.52|0)+','+(v*.26|0)+')';
+          ctx.fillRect(x,y,1,1);
+        }
+        if (y%4===0) { ctx.fillStyle='rgba(70,40,10,0.4)'; ctx.fillRect(0,y,16,1); }
+      }
+    }),
+    leaf: makeTex(function(ctx) {
+      for (var y=0;y<16;y++) for (var x=0;x<16;x++) {
+        if (r9() > 0.12) {
+          var v = 40+r9()*55;
+          ctx.fillStyle = 'rgb('+(v*.5|0)+','+(v|0)+','+(v*.3|0)+')';
+          ctx.fillRect(x,y,1,1);
+        }
+      }
+    })
+  };
+}
+
+// ─── マテリアル生成 ───────────────────────────────────────────
+function buildMaterials(tex) {
+  function lm(key) {
+    return new THREE.MeshLambertMaterial({ map: tex[key] });
   }
-  matGrass   = [lm('gs'),lm('gs'),lm('gt'),lm('di'),lm('gs'),lm('gs')];
-  matStone   = [lm('st'),lm('st'),lm('st'),lm('st'),lm('st'),lm('st')];
-  matDirt    = [lm('di'),lm('di'),lm('di'),lm('di'),lm('di'),lm('di')];
-  matSand    = [lm('sa'),lm('sa'),lm('sa'),lm('sa'),lm('sa'),lm('sa')];
-  matBrick   = [lm('br'),lm('br'),lm('br'),lm('br'),lm('br'),lm('br')];
-  matWood    = [lm('wp'),lm('wp'),lm('wp'),lm('wp'),lm('wp'),lm('wp')];
-  matLeaf    = [lm('lf'),lm('lf'),lm('lf'),lm('lf'),lm('lf'),lm('lf')];
-  matFallback= new THREE.MeshLambertMaterial({color:0x888888});
-}
-function mats(t){
-  if(t==='grass') return matGrass||[matFallback];
-  if(t==='dirt' ) return matDirt ||[matFallback];
-  if(t==='sand' ) return matSand ||[matFallback];
-  if(t==='brick') return matBrick||[matFallback];
-  if(t==='wood' ) return matWood ||[matFallback];
-  if(t==='leaf' ) return matLeaf ||[matFallback];
-  return matStone||[matFallback];
-}
-
-// ═══════════════════════════════════════════════════════════
-//  ボクセル
-// ═══════════════════════════════════════════════════════════
-var VS=0.20, MAXV=3000;
-var vdat={}, vmsh={};
-var geo;
-
-function vk(ix,iy,iz){ return ix+'|'+iy+'|'+iz; }
-function w2i(wx,wy,wz){ return [Math.round(wx/VS),Math.round(wy/VS),Math.round(wz/VS)]; }
-function i2w(ix,iy,iz){ return new THREE.Vector3(ix*VS,iy*VS,iz*VS); }
-function btype(ix,iy,iz){ return vdat[vk(ix,iy+1,iz)]?'stone':'grass'; }
-
-function addVox(wx,wy,wz){
-  var cnt=Object.keys(vdat).length;
-  if(cnt>=MAXV) return;
-  var idx=w2i(wx,wy,wz); var ix=idx[0],iy=idx[1],iz=idx[2];
-  var k=vk(ix,iy,iz);
-  if(vdat[k]) return;
-  vdat[k]=1;
-  var m=new THREE.Mesh(geo,mats(btype(ix,iy,iz)));
-  m.position.copy(i2w(ix,iy,iz));
-  scene.add(m); vmsh[k]=m;
-  var bk=vk(ix,iy-1,iz);
-  if(vmsh[bk]) vmsh[bk].material=mats(btype(ix,iy-1,iz));
-  document.getElementById('bcnt').textContent=cnt+1;
+  return {
+    grass: [ lm('grassSide'), lm('grassSide'), lm('grassTop'),
+             lm('dirt'),      lm('grassSide'), lm('grassSide') ],
+    stone: [ lm('stone'), lm('stone'), lm('stone'),
+             lm('stone'), lm('stone'), lm('stone') ],
+    dirt:  [ lm('dirt'), lm('dirt'), lm('dirt'),
+             lm('dirt'), lm('dirt'), lm('dirt') ],
+    sand:  [ lm('sand'), lm('sand'), lm('sand'),
+             lm('sand'), lm('sand'), lm('sand') ],
+    brick: [ lm('brick'), lm('brick'), lm('brick'),
+             lm('brick'), lm('brick'), lm('brick') ],
+    wood:  [ lm('wood'), lm('wood'), lm('wood'),
+             lm('wood'), lm('wood'), lm('wood') ],
+    leaf:  [ lm('leaf'), lm('leaf'), lm('leaf'),
+             lm('leaf'), lm('leaf'), lm('leaf') ]
+  };
 }
 
-function clearVox(){
-  for(var k in vmsh) scene.remove(vmsh[k]);
-  vdat={}; vmsh={};
-  document.getElementById('bcnt').textContent='0';
+// ─── ボクセル管理 ─────────────────────────────────────────────
+var voxelSet  = {};  // "ix|iy|iz" -> true
+var voxelMesh = {};  // "ix|iy|iz" -> Mesh
+var voxelCount = 0;
+
+function vkey(ix,iy,iz) { return ix+'|'+iy+'|'+iz; }
+
+function worldToIdx(wx,wy,wz) {
+  return [Math.round(wx/VOXEL), Math.round(wy/VOXEL), Math.round(wz/VOXEL)];
 }
 
-// ═══════════════════════════════════════════════════════════
-//  Three.js
-// ═══════════════════════════════════════════════════════════
-var renderer,scene,camera;
-
-function init(){
-  try { buildTex(); } catch(e){ setInfo('❌ テクスチャ生成エラー:<br>'+e.message); return; }
-  try { buildMat(); } catch(e){ setInfo('❌ マテリアル生成エラー:<br>'+e.message); return; }
-
-  var cvs=document.getElementById('cvs');
-  renderer=new THREE.WebGLRenderer({canvas:cvs, antialias:false, alpha:true});
-  renderer.setClearColor(0x000000,0);
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
-  renderer.setSize(window.innerWidth,window.innerHeight);
-
-  scene=new THREE.Scene();
-  camera=new THREE.PerspectiveCamera(70,window.innerWidth/window.innerHeight,0.01,60);
-  camera.position.set(0,0,0);
-
-  scene.add(new THREE.AmbientLight(0xffffff,0.8));
-  var sun=new THREE.DirectionalLight(0xFFF5E0,0.5); sun.position.set(5,8,3); scene.add(sun);
-
-  geo=new THREE.BoxGeometry(VS,VS,VS);
-  makeClouds();
-  checkCompat();
-  bindUI();
-
-  window.addEventListener('resize',function(){
-    camera.aspect=window.innerWidth/window.innerHeight;
-    camera.updateProjectionMatrix();
-    renderer.setSize(window.innerWidth,window.innerHeight);
-  });
+function blockType(ix,iy,iz) {
+  // 表面（上が空）→ 草、それ以外 → 石
+  return voxelSet[vkey(ix, iy+1, iz)] ? 'stone' : 'grass';
 }
 
-// ═══════════════════════════════════════════════════════════
-//  互換性確認
-// ═══════════════════════════════════════════════════════════
-function checkCompat(){
-  var lines=['✅ ライブラリ OK'];
-  if(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia) lines.push('✅ カメラAPI OK');
-  else lines.push('❌ カメラAPI なし (Safari で開いてください)');
-  if('DeviceOrientationEvent' in window) lines.push('✅ ジャイロ OK');
-  else lines.push('⚠ ジャイロ なし');
-  setInfo(lines.join('<br>'));
-}
+function addVoxel(wx,wy,wz, scene,geo,mats) {
+  if (voxelCount >= MAX_V) return;
+  var idx = worldToIdx(wx,wy,wz);
+  var ix=idx[0], iy=idx[1], iz=idx[2];
+  var k = vkey(ix,iy,iz);
+  if (voxelSet[k]) return;
 
-// ═══════════════════════════════════════════════════════════
-//  カメラ
-// ═══════════════════════════════════════════════════════════
-var camStream=null;
-function startCamera(){
-  return navigator.mediaDevices.getUserMedia({
-    video:{ facingMode:{exact:'environment'}, width:{ideal:1280}, height:{ideal:720} },
-    audio:false
-  }).catch(function(){
-    return navigator.mediaDevices.getUserMedia({video:true,audio:false});
-  }).then(function(stream){
-    camStream=stream;
-    var v=document.getElementById('cam');
-    v.srcObject=stream;
-    return v.play();
-  });
-}
+  voxelSet[k] = true;
+  voxelCount++;
 
-// ═══════════════════════════════════════════════════════════
-//  ジャイロ → カメラ回転
-// ═══════════════════════════════════════════════════════════
-var _q1=new THREE.Quaternion(-Math.sqrt(0.5),0,0,Math.sqrt(0.5));
-var _zee=new THREE.Vector3(0,0,1);
-var _euler=new THREE.Euler();
-var _q0=new THREE.Quaternion(), _q2=new THREE.Quaternion();
-var gyroOK=false;
+  var type = blockType(ix,iy,iz);
+  var mesh = new THREE.Mesh(geo, mats[type]);
+  mesh.position.set(ix*VOXEL, iy*VOXEL, iz*VOXEL);
+  scene.add(mesh);
+  voxelMesh[k] = mesh;
 
-function onGyro(e){
-  if(!e.alpha&&!e.beta&&!e.gamma) return;
-  gyroOK=true;
-  var a=THREE.MathUtils.degToRad(e.alpha||0);
-  var b=THREE.MathUtils.degToRad(e.beta||0);
-  var g=THREE.MathUtils.degToRad(e.gamma||0);
-  _euler.set(b,a,-g,'YXZ');
-  _q0.setFromEuler(_euler);
-  _q2.setFromAxisAngle(_zee,0);
-  camera.quaternion.copy(_q0.multiply(_q1).multiply(_q2));
-}
-
-function enableGyro(){
-  if(typeof DeviceOrientationEvent==='undefined') return Promise.resolve(false);
-  if(typeof DeviceOrientationEvent.requestPermission==='function'){
-    return DeviceOrientationEvent.requestPermission().then(function(s){
-      if(s==='granted'){ window.addEventListener('deviceorientation',onGyro,true); return true; }
-      return false;
-    }).catch(function(){ return false; });
-  } else {
-    window.addEventListener('deviceorientation',onGyro,true);
-    return Promise.resolve(true);
-  }
-}
-
-// ═══════════════════════════════════════════════════════════
-//  スキャン
-// ═══════════════════════════════════════════════════════════
-var scanDist=2.0, scanInterval=null;
-var _spread=[[0,0],[0.025,0],[-0.025,0],[0,0.025],[0,-0.025],[0.05,0],[-0.05,0],[0,0.05],[0,-0.05]];
-
-function scanOnce(){
-  for(var i=0;i<_spread.length;i++){
-    var dx=_spread[i][0], dy=_spread[i][1];
-    var d=new THREE.Vector3(dx,dy,-1).applyQuaternion(camera.quaternion).normalize();
-    var jitter=(Math.random()-.5)*0.08;
-    var p=camera.position.clone().addScaledVector(d,scanDist+jitter);
-    addVox(p.x,p.y,p.z);
-  }
-}
-
-function startScan(){
-  if(scanInterval) return;
-  document.getElementById('btn-scan').classList.add('on');
-  document.getElementById('status').textContent='スキャン中...';
-  scanInterval=setInterval(scanOnce,60);
-}
-function stopScan(){
-  if(scanInterval){ clearInterval(scanInterval); scanInterval=null; }
-  document.getElementById('btn-scan').classList.remove('on');
-  document.getElementById('status').textContent='スキャン一時停止';
-}
-
-// ═══════════════════════════════════════════════════════════
-//  USDZ エクスポート → iOS Quick Look AR
-// ═══════════════════════════════════════════════════════════
-var currentBlobUrl=null;
-
-function generateUSDA(){
-  var keys=Object.keys(vdat);
-  if(keys.length===0) return null;
-
-  // ブロックの最小Y（ARの床に合わせるオフセット）
-  var minY=Infinity;
-  for(var i=0;i<keys.length;i++){
-    var p=keys[i].split('|');
-    var iy=parseInt(p[1]);
-    if(iy<minY) minY=iy;
+  // 下のブロックの表面タイプを更新
+  var belowKey = vkey(ix,iy-1,iz);
+  if (voxelMesh[belowKey]) {
+    voxelMesh[belowKey].material = mats[blockType(ix,iy-1,iz)];
   }
 
-  // マテリアル定義
-  var mDefs=[
-    { name:'GrassMat', r:0.36, g:0.56, b:0.14 },
-    { name:'StoneMat', r:0.46, g:0.46, b:0.46 },
-    { name:'DirtMat',  r:0.55, g:0.38, b:0.22 },
-    { name:'SandMat',  r:0.82, g:0.74, b:0.40 },
-    { name:'BrickMat', r:0.63, g:0.24, b:0.15 },
-    { name:'WoodMat',  r:0.52, g:0.37, b:0.18 },
-    { name:'LeafMat',  r:0.22, g:0.50, b:0.12 },
-  ];
-  var matTypeMap={ grass:'GrassMat', stone:'StoneMat', dirt:'DirtMat', sand:'SandMat', brick:'BrickMat', wood:'WoodMat', leaf:'LeafMat' };
-
-  var lines=[
-    '#usda 1.0',
-    '(',
-    '    defaultPrim = "Root"',
-    '    metersPerUnit = 1.0',
-    '    upAxis = "Y"',
-    ')',
-    '',
-    'def Xform "Root"',
-    '{'
-  ];
-
-  // 各ボクセルをCubeとして追加
-  for(var i=0;i<keys.length;i++){
-    var p=keys[i].split('|');
-    var ix=parseInt(p[0]), iy=parseInt(p[1]), iz=parseInt(p[2]);
-    // Y をオフセット（床=0）
-    var wx=(ix*VS).toFixed(3);
-    var wy=((iy-minY)*VS+VS*0.5).toFixed(3);
-    var wz=(iz*VS).toFixed(3);
-    var t=btype(ix,iy,iz);
-    var matRef=matTypeMap[t]||'StoneMat';
-    lines.push(
-      '    def Cube "B'+i+'"',
-      '    {',
-      '        double size = '+VS,
-      '        double3 xformOp:translate = ('+wx+', '+wy+', '+wz+')',
-      '        uniform token[] xformOpOrder = ["xformOp:translate"]',
-      '        rel material:binding = </Root/'+matRef+'>',
-      '    }'
-    );
-  }
-
-  // マテリアル
-  for(var j=0;j<mDefs.length;j++){
-    var m=mDefs[j];
-    lines.push(
-      '    def Material "'+m.name+'"',
-      '    {',
-      '        token outputs:surface.connect = </Root/'+m.name+'/S.outputs:surface>',
-      '        def Shader "S"',
-      '        {',
-      '            uniform token info:id = "UsdPreviewSurface"',
-      '            color3f inputs:diffuseColor = ('+m.r.toFixed(3)+', '+m.g.toFixed(3)+', '+m.b.toFixed(3)+')',
-      '            float inputs:roughness = 0.9',
-      '            float inputs:metallic = 0.0',
-      '            token outputs:surface',
-      '        }',
-      '    }'
-    );
-  }
-
-  lines.push('}');
-  return lines.join('\n');
+  document.getElementById('n').textContent = voxelCount;
 }
 
-function viewInAR(){
-  var cnt=Object.keys(vdat).length;
-  if(cnt===0){ showErr('まずスキャンしてブロックを\n配置してください'); return; }
+// ─── 深度データ処理 ───────────────────────────────────────────
+var _invProj = new THREE.Matrix4();
+var _camMat  = new THREE.Matrix4();
+var _v4      = new THREE.Vector4();
+var _v3      = new THREE.Vector3();
 
-  var overlay=document.getElementById('gen-overlay');
-  document.getElementById('gen-pct').textContent='0';
-  overlay.style.display='flex';
+function processDepth(depthInfo, view, scene, geo, mats) {
+  var dw = depthInfo.width;
+  var dh = depthInfo.height;
 
-  // 少し遅延してUIを更新してから処理
-  setTimeout(function(){
-    try{
-      var usda=generateUSDA();
-      document.getElementById('gen-pct').textContent='50';
+  _invProj.fromArray(view.projectionMatrix).invert();
+  _camMat.fromArray(view.transform.matrix);
 
-      var zip=new JSZip();
-      zip.file('scene.usda', usda, {compression:'STORE'});
+  var centerDepth = depthInfo.getDepthInMeters(0.5, 0.5);
+  if (isFinite(centerDepth)) {
+    document.getElementById('d').textContent = centerDepth.toFixed(2);
+  }
 
-      zip.generateAsync({type:'arraybuffer', compression:'STORE'}).then(function(buf){
-        document.getElementById('gen-pct').textContent='90';
-        var blob=new Blob([buf],{type:'model/vnd.usdz+zip'});
+  for (var py = 0; py < dh; py += SKIP) {
+    for (var px = 0; px < dw; px += SKIP) {
+      var u = (px + 0.5) / dw;
+      var v = (py + 0.5) / dh;
+      var depth = depthInfo.getDepthInMeters(u, v);
 
-        if(currentBlobUrl) URL.revokeObjectURL(currentBlobUrl);
-        currentBlobUrl=URL.createObjectURL(blob);
+      if (!isFinite(depth) || depth < 0.15 || depth > 5.0) continue;
 
-        var link=document.getElementById('ar-link');
-        link.href=currentBlobUrl;
-        document.getElementById('gen-pct').textContent='100';
+      // NDC → ビュー空間方向ベクトル
+      var ndcX =  u * 2 - 1;
+      var ndcY = -(v * 2 - 1);
+      _v4.set(ndcX, ndcY, -1, 1).applyMatrix4(_invProj);
+      _v3.set(_v4.x/_v4.w, _v4.y/_v4.w, _v4.z/_v4.w).normalize();
+      _v3.multiplyScalar(depth);
 
-        setTimeout(function(){
-          overlay.style.display='none';
-          link.click(); // iOS Quick Look を起動
-        },300);
-      }).catch(function(e){
-        overlay.style.display='none';
-        showErr('USDZ生成エラー:\n'+e.message);
-      });
-    } catch(e){
-      overlay.style.display='none';
-      showErr('エクスポートエラー:\n'+e.message);
+      // ビュー → ワールド
+      _v4.set(_v3.x, _v3.y, _v3.z, 1).applyMatrix4(_camMat);
+      addVoxel(_v4.x, _v4.y, _v4.z, scene, geo, mats);
     }
-  },50);
-}
-
-// ═══════════════════════════════════════════════════════════
-//  スキャン開始フロー
-// ═══════════════════════════════════════════════════════════
-function beginScan(){
-  startCamera().then(function(){
-    return enableGyro();
-  }).then(function(ok){
-    document.getElementById('start').style.display='none';
-    document.getElementById('hud').style.display='block';
-    document.getElementById('stat2').textContent = ok
-      ? 'ジャイロ ON — 向けて長押しでスキャン'
-      : 'ジャイロ OFF — 固定視点でスキャン';
-    document.getElementById('status').textContent='準備完了';
-    renderer.setAnimationLoop(renderLoop);
-  }).catch(function(e){
-    showErr('カメラ起動エラー:\n'+e.message+'\n\nSafari の設定でカメラを許可してください');
-  });
-}
-
-var _fn=0,_ft=0;
-function renderLoop(t){
-  _fn++;
-  if(t-_ft>1000){ document.getElementById('fps').textContent=_fn; _fn=0; _ft=t; }
-  renderer.render(scene,camera);
-}
-
-// ═══════════════════════════════════════════════════════════
-//  デモモード
-// ═══════════════════════════════════════════════════════════
-var demoRaf=null;
-function startDemo(){
-  document.getElementById('start').style.display='none';
-  document.getElementById('hud').style.display='block';
-  document.getElementById('stat2').textContent='デモ表示中 (カメラ不使用)';
-  document.getElementById('status').textContent='デモモード';
-  document.getElementById('btn-scan').style.display='none';
-  document.getElementById('dist-panel').style.display='none';
-
-  camera.position.set(0,1.4,2.4);
-  camera.lookAt(0,0,0);
-
-  for(var x=-4;x<=4;x++) for(var z=-4;z<=4;z++) addVox(x*VS,0,z*VS);
-  [[1,1,1],[1,2,1],[2,1,1],[2,2,2],[2,3,2],[-2,1,-1],[-2,2,-1],[0,1,-2],[0,2,-2],[0,3,-2]].forEach(function(p){
-    addVox(p[0]*VS,p[1]*VS,p[2]*VS);
-  });
-
-  var angle=0;
-  function loop(){
-    angle+=0.004;
-    camera.position.set(Math.sin(angle)*3.5,1.6,Math.cos(angle)*3.5);
-    camera.lookAt(0,0.2,0);
-    renderer.render(scene,camera);
-    demoRaf=requestAnimationFrame(loop);
-  }
-  demoRaf=requestAnimationFrame(loop);
-}
-
-// ═══════════════════════════════════════════════════════════
-//  UI バインド
-// ═══════════════════════════════════════════════════════════
-function exitScan(){
-  stopScan();
-  renderer.setAnimationLoop(null);
-  if(demoRaf){ cancelAnimationFrame(demoRaf); demoRaf=null; }
-  if(camStream){ camStream.getTracks().forEach(function(t){t.stop();}); camStream=null; }
-  document.getElementById('cam').srcObject=null;
-  window.removeEventListener('deviceorientation',onGyro,true);
-  clearVox();
-  document.getElementById('hud').style.display='none';
-  document.getElementById('btn-scan').style.display='';
-  document.getElementById('dist-panel').style.display='';
-  document.getElementById('start').style.display='flex';
-  checkCompat();
-}
-
-function bindUI(){
-  document.getElementById('btn-begin').addEventListener('click',beginScan);
-  document.getElementById('btn-demo' ).addEventListener('click',startDemo);
-  document.getElementById('btn-ar'   ).addEventListener('click',viewInAR);
-  document.getElementById('btn-clear').addEventListener('click',clearVox);
-  document.getElementById('btn-exit' ).addEventListener('click',exitScan);
-  document.getElementById('btn-eback').addEventListener('click',function(){ document.getElementById('err').style.display='none'; });
-
-  var sb=document.getElementById('btn-scan');
-  sb.addEventListener('touchstart',function(e){ e.preventDefault(); startScan(); },{passive:false});
-  sb.addEventListener('touchend',  function(e){ e.preventDefault(); stopScan();  },{passive:false});
-  sb.addEventListener('mousedown', startScan);
-  sb.addEventListener('mouseup',   stopScan);
-
-  document.getElementById('dist-range').addEventListener('input',function(){
-    scanDist=parseFloat(this.value);
-    document.getElementById('dist-val').textContent=scanDist.toFixed(1)+' m';
-    document.getElementById('dval').textContent=scanDist.toFixed(1);
-  });
-}
-
-// ── 雲 ────────────────────────────────────────────────────────────────────
-function makeClouds(){
-  var w=document.getElementById('cld-wrap');
-  for(var i=0;i<6;i++){
-    var el=document.createElement('div');
-    var cw=50+Math.random()*90, ch=18+Math.random()*22;
-    el.className='cld';
-    el.style.cssText='width:'+cw+'px;height:'+ch+'px;top:'+(Math.random()*50)+'%;left:'+(Math.random()*100)+'%;animation:cld '+(18+Math.random()*22)+'s linear infinite;animation-delay:-'+(Math.random()*22)+'s;';
-    w.appendChild(el);
   }
 }
+
+// ─── メインアプリ ─────────────────────────────────────────────
+var renderer, scene, camera, refSpace;
+var lastScan = 0;
+var frameN = 0, lastFpsT = 0;
+
+function startApp() {
+  // Three.js セットアップ
+  var canvas = document.getElementById('c');
+  renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: false, alpha: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.xr.enabled = true;
+
+  scene = new THREE.Scene();
+  camera = new THREE.PerspectiveCamera(70, window.innerWidth/window.innerHeight, 0.01, 30);
+
+  scene.add(new THREE.AmbientLight(0xffffff, 0.8));
+  var sun = new THREE.DirectionalLight(0xfffae0, 0.5);
+  sun.position.set(3, 5, 2);
+  scene.add(sun);
+
+  var tex  = buildTextures();
+  var mats = buildMaterials(tex);
+  var geo  = new THREE.BoxGeometry(VOXEL, VOXEL, VOXEL);
+
+  window.addEventListener('resize', function() {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+  });
+
+  // WebXR AR セッション開始
+  var opts = {
+    requiredFeatures: ['local-floor'],
+    optionalFeatures: ['depth-sensing'],
+    depthSensing: {
+      usagePreference:      ['cpu-optimized'],
+      dataFormatPreference: ['luminance-alpha']
+    }
+  };
+
+  navigator.xr.requestSession('immersive-ar', opts)
+    .catch(function() {
+      // depth-sensing なしで再試行
+      return navigator.xr.requestSession('immersive-ar', {
+        requiredFeatures: ['local-floor']
+      });
+    })
+    .then(function(session) {
+      var hasDepth = !!session.depthUsage;
+
+      renderer.xr.setReferenceSpaceType('local-floor');
+      return renderer.xr.setSession(session).then(function() {
+        return session.requestReferenceSpace('local-floor')
+          .catch(function() { return session.requestReferenceSpace('local'); });
+      }).then(function(rs) {
+        refSpace = rs;
+
+        // UI 切り替え
+        document.getElementById('start-screen').style.display = 'none';
+        document.getElementById('hud').style.display = 'block';
+        document.getElementById('crosshair').style.display = 'block';
+
+        if (!hasDepth) {
+          document.getElementById('d').textContent = 'LiDAR 無効';
+        }
+
+        session.addEventListener('end', function() {
+          document.getElementById('start-screen').style.display = 'flex';
+          document.getElementById('hud').style.display = 'none';
+          document.getElementById('crosshair').style.display = 'none';
+        });
+
+        renderer.setAnimationLoop(function(time, frame) {
+          // FPS カウント
+          frameN++;
+          if (time - lastFpsT > 1000) {
+            document.getElementById('f').textContent = frameN;
+            frameN = 0; lastFpsT = time;
+          }
+
+          if (frame && refSpace && hasDepth && (time - lastScan) > PERIOD) {
+            lastScan = time;
+            var pose = frame.getViewerPose(refSpace);
+            if (pose) {
+              for (var i = 0; i < pose.views.length; i++) {
+                var view = pose.views[i];
+                var di = frame.getDepthInformation && frame.getDepthInformation(view);
+                if (di) processDepth(di, view, scene, geo, mats);
+              }
+            }
+          }
+
+          renderer.render(scene, camera);
+        });
+      });
+    })
+    .catch(function(e) {
+      showError('AR 開始に失敗しました\n\n' + e.message + '\n\n※ Safari で開いてください\n※ iOS 16 以上が必要です');
+    });
+}
+
+// ─── 起動ボタン ───────────────────────────────────────────────
+function onStart() {
+  document.getElementById('start-btn').disabled = true;
+  document.getElementById('start-btn').textContent = '起動中...';
+
+  if (typeof THREE === 'undefined') {
+    showError('Three.js 読み込み失敗'); return;
+  }
+  if (!navigator.xr) {
+    showError('WebXR 非対応です\nSafari 16+ で開いてください'); return;
+  }
+
+  navigator.xr.isSessionSupported('immersive-ar').then(function(ok) {
+    if (!ok) {
+      showError('AR セッション非対応\niPhone 12 Pro 以降の\nSafari で試してください');
+      return;
+    }
+    startApp();
+  }).catch(function(e) {
+    showError('確認エラー: ' + e.message);
+  });
+}
+
+document.getElementById('start-btn').addEventListener('click', onStart);
+
+// ─── 互換性表示 ───────────────────────────────────────────────
+(function checkCompat() {
+  var lines = [];
+  if (typeof THREE !== 'undefined') lines.push('✅ Three.js');
+  else lines.push('❌ Three.js 未読込');
+  if (navigator.xr) lines.push('✅ WebXR あり');
+  else lines.push('❌ WebXR なし (Safari で開いてください)');
+  document.getElementById('compat').innerHTML = lines.join(' &nbsp; ');
+})();
 </script>
 </body>
 </html>
