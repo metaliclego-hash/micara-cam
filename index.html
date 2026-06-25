@@ -4,129 +4,70 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>Micra-Cam | LiDAR × Minecraft</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
 <style>
 * { margin:0; padding:0; box-sizing:border-box; }
-body { background:#000; overflow:hidden; touch-action:none; }
+body { background:#000; overflow:hidden; touch-action:none; font-family:'Press Start 2P',monospace; }
 
-#main-canvas {
-  position:fixed; top:0; left:0;
-  width:100vw; height:100vh;
-  display:block;
-}
+#main-canvas { position:fixed; top:0; left:0; width:100vw; height:100vh; display:block; }
 
-/* ── UI layers ── */
-.layer {
-  position:fixed; top:0; left:0;
-  width:100%; height:100%;
-  z-index:10;
-}
+.layer { position:fixed; top:0; left:0; width:100%; height:100%; z-index:10; }
 
 /* ── Start Screen ── */
 #start-screen {
   display:flex; flex-direction:column;
   align-items:center; justify-content:center;
-  background:linear-gradient(180deg,#1a6e9f 0%,#3399cc 35%,#87CEEB 60%,#5D8A2A 80%,#4A7020 100%);
+  background:linear-gradient(180deg,#1a6e9f 0%,#3399cc 40%,#87CEEB 65%,#5D8A2A 80%,#3f6014 100%);
 }
-
-.clouds {
-  position:absolute; top:0; left:0; right:0; height:55%;
-  overflow:hidden; pointer-events:none;
-}
-.cloud {
-  position:absolute;
-  background:#fff; opacity:0.9;
-  image-rendering:pixelated;
-}
-
 .mc-logo {
-  font-family:'Press Start 2P',monospace;
-  font-size:clamp(22px,7vw,58px);
-  color:#FFFF00;
-  text-shadow:4px 4px 0 #808000, 6px 6px 0 rgba(0,0,0,0.4);
-  letter-spacing:3px;
-  z-index:1;
-  user-select:none;
+  font-size:clamp(22px,7vw,56px); color:#FFFF00;
+  text-shadow:4px 4px 0 #808000,6px 6px 0 rgba(0,0,0,0.35);
+  letter-spacing:3px; z-index:1; user-select:none;
 }
 .mc-sub {
-  font-family:'Press Start 2P',monospace;
-  font-size:clamp(7px,2vw,12px);
-  color:#fff;
-  text-shadow:2px 2px 0 #000;
-  margin:10px 0 50px;
-  z-index:1;
-  text-align:center;
-  line-height:1.8;
+  font-size:clamp(7px,2vw,11px); color:#fff;
+  text-shadow:2px 2px 0 #000; margin:10px 0 44px;
+  z-index:1; text-align:center; line-height:2;
 }
-
-/* Minecraft-style button */
 .mc-btn {
-  display:block;
-  width:clamp(220px,65vw,420px);
-  padding:13px 10px;
-  margin:5px 0;
+  display:block; width:clamp(220px,65vw,400px);
+  padding:13px 10px; margin:5px 0;
   font-family:'Press Start 2P',monospace;
-  font-size:clamp(9px,2.2vw,14px);
-  color:#fff;
-  text-shadow:2px 2px 0 rgba(0,0,0,0.5);
-  background:#838383;
-  border:none;
-  border-top:3px solid #c6c6c6;
-  border-left:3px solid #c6c6c6;
-  border-right:3px solid #3d3d3d;
-  border-bottom:3px solid #3d3d3d;
-  cursor:pointer;
-  text-align:center;
-  z-index:1;
+  font-size:clamp(9px,2.2vw,13px); color:#fff;
+  text-shadow:2px 2px 0 rgba(0,0,0,0.6);
+  background:#838383; border:none; cursor:pointer; text-align:center; z-index:1;
+  border-top:3px solid #c6c6c6; border-left:3px solid #c6c6c6;
+  border-right:3px solid #3d3d3d; border-bottom:3px solid #3d3d3d;
   -webkit-tap-highlight-color:transparent;
 }
-.mc-btn:hover { background:#929292; }
 .mc-btn:active {
   border-top-color:#3d3d3d; border-left-color:#3d3d3d;
   border-right-color:#c6c6c6; border-bottom-color:#c6c6c6;
-  transform:translate(1px,1px);
 }
-.mc-btn.green {
-  background:#5a832a;
-  border-top-color:#8fbf5a; border-left-color:#8fbf5a;
-  border-right-color:#2a4a10; border-bottom-color:#2a4a10;
-}
-.mc-btn.green:hover { background:#6a9a33; }
-.mc-btn.red {
-  background:#832a2a;
-  border-top-color:#bf5a5a; border-left-color:#bf5a5a;
-  border-right-color:#4a1010; border-bottom-color:#4a1010;
-}
-.mc-btn.red:hover { background:#923333; }
+.mc-btn.green { background:#5a832a; border-top-color:#8fbf5a; border-left-color:#8fbf5a; border-right-color:#2a4a10; border-bottom-color:#2a4a10; }
+.mc-btn.red   { background:#832a2a; border-top-color:#bf5a5a; border-left-color:#bf5a5a; border-right-color:#4a1010; border-bottom-color:#4a1010; }
 
 #compat-info {
-  font-family:'Press Start 2P',monospace;
-  font-size:7px; color:rgba(255,255,255,0.75);
-  text-align:center; line-height:2.2; margin-top:18px; z-index:1;
+  font-size:7px; color:rgba(255,255,255,0.8); text-align:center;
+  line-height:2.3; margin-top:18px; z-index:1; max-width:300px;
 }
 
 /* ── HUD ── */
 #hud { display:none; pointer-events:none; }
-
 #status-bar {
   position:absolute; top:16px; left:50%; transform:translateX(-50%);
-  font-family:'Press Start 2P',monospace; font-size:10px; color:#fff;
-  background:rgba(0,0,0,0.55); border:2px solid rgba(255,255,255,0.25);
-  padding:7px 14px; white-space:nowrap;
+  font-size:9px; color:#fff; background:rgba(0,0,0,0.6);
+  border:2px solid rgba(255,255,255,0.25); padding:7px 14px; white-space:nowrap;
 }
 #lidar-badge {
   position:absolute; top:50px; left:50%; transform:translateX(-50%);
-  font-family:'Press Start 2P',monospace; font-size:8px;
-  background:rgba(0,0,0,0.45); padding:4px 10px;
+  font-size:7px; background:rgba(0,0,0,0.5); padding:4px 10px; color:#5EE;
 }
 #voxel-info {
-  position:absolute; top:16px; left:16px;
-  font-family:'Press Start 2P',monospace; font-size:8px; color:#5EE; line-height:2;
-  background:rgba(0,0,0,0.5); padding:8px 12px;
+  position:absolute; top:16px; left:12px;
+  font-size:8px; color:#5EE; line-height:2.1;
+  background:rgba(0,0,0,0.55); padding:8px 12px;
 }
-
-/* Crosshair */
 #crosshair {
   position:absolute; top:50%; left:50%;
   transform:translate(-50%,-50%);
@@ -136,25 +77,11 @@ body { background:#000; overflow:hidden; touch-action:none; }
   content:''; position:absolute; background:rgba(255,255,255,0.85);
 }
 #crosshair::before { width:2px; height:100%; left:50%; transform:translateX(-50%); }
-#crosshair::after  { height:2px; width:100%; top:50%;  transform:translateY(-50%); }
-
+#crosshair::after  { height:2px; width:100%; top:50%; transform:translateY(-50%); }
 #hud-controls {
   position:absolute; bottom:28px; left:50%; transform:translateX(-50%);
   display:flex; gap:10px; pointer-events:all;
 }
-
-/* Hotbar */
-#hotbar {
-  position:absolute; bottom:90px; left:50%; transform:translateX(-50%);
-  display:flex; gap:4px;
-}
-.hotbar-slot {
-  width:44px; height:44px;
-  border:2px solid #555; border-top-color:#999; border-left-color:#999;
-  background:rgba(0,0,0,0.5);
-  display:flex; align-items:center; justify-content:center;
-}
-.hotbar-slot canvas { image-rendering:pixelated; }
 
 /* ── Error Screen ── */
 #error-screen {
@@ -162,590 +89,498 @@ body { background:#000; overflow:hidden; touch-action:none; }
   align-items:center; justify-content:center;
   background:rgba(0,0,0,0.93); padding:24px;
 }
-#error-msg {
-  font-family:'Press Start 2P',monospace; font-size:10px;
-  color:#F66; text-align:center; line-height:2.2; max-width:320px;
-  margin-bottom:24px;
-}
+#error-msg { font-size:9px; color:#F66; text-align:center; line-height:2.2; max-width:300px; margin-bottom:24px; }
 
-/* Scan progress ring */
-#scan-progress {
-  position:absolute; bottom:100px; right:20px;
-  font-family:'Press Start 2P',monospace; font-size:7px; color:#5EE;
-  background:rgba(0,0,0,0.5); padding:6px 10px; display:none;
-}
+/* pixel clouds */
+@keyframes cloudMove { from{transform:translateX(-150px)} to{transform:translateX(110vw)} }
+.cloud { position:absolute; background:#fff; opacity:0.88; border-radius:3px; }
 </style>
 </head>
 <body>
 
 <canvas id="main-canvas"></canvas>
 
-<!-- ── Start Screen ── -->
+<!-- Start Screen -->
 <div class="layer" id="start-screen">
-  <div class="clouds" id="clouds"></div>
+  <div id="cloud-container" style="position:absolute;top:0;left:0;right:0;height:60%;overflow:hidden;pointer-events:none;"></div>
   <div class="mc-logo">MICRA-CAM</div>
-  <div class="mc-sub">LiDAR × MINECRAFT<br><span style="font-size:0.7em;color:rgba(255,255,255,0.7)">現実空間をマイクラ化</span></div>
+  <div class="mc-sub">LiDAR × MINECRAFT<br><span style="font-size:.75em;color:rgba(255,255,255,.7)">現実空間をマイクラ化</span></div>
   <button class="mc-btn green" id="btn-start">▶ AR スキャン開始</button>
-  <button class="mc-btn" id="btn-demo">🎮 デモモード</button>
-  <div id="compat-info">確認中...</div>
+  <button class="mc-btn"       id="btn-demo" >🎮 デモモード</button>
+  <div id="compat-info">読込み中...</div>
 </div>
 
-<!-- ── HUD ── -->
+<!-- HUD -->
 <div class="layer" id="hud">
   <div id="status-bar">スキャン中...</div>
   <div id="lidar-badge">LiDAR: 待機中</div>
   <div id="voxel-info">
     BLOCKS: <span id="block-count">0</span><br>
-    DEPTH: <span id="depth-val">--</span>m<br>
+    DEPTH: <span id="depth-val">--</span> m<br>
     FPS: <span id="fps-val">--</span>
   </div>
   <div id="crosshair"></div>
-  <div id="hotbar" id="hotbar"></div>
-  <div id="scan-progress">スキャン: <span id="scan-pct">0</span>%</div>
   <div id="hud-controls">
-    <button class="mc-btn green" id="btn-toggle" style="font-size:9px;padding:10px;">スキャン停止</button>
-    <button class="mc-btn red"   id="btn-clear"  style="font-size:9px;padding:10px;">クリア</button>
-    <button class="mc-btn"       id="btn-exit"   style="font-size:9px;padding:10px;">終了</button>
+    <button class="mc-btn green" id="btn-toggle" style="font-size:8px;padding:10px">停止</button>
+    <button class="mc-btn red"   id="btn-clear"  style="font-size:8px;padding:10px">クリア</button>
+    <button class="mc-btn"       id="btn-exit"   style="font-size:8px;padding:10px">終了</button>
   </div>
 </div>
 
-<!-- ── Error Screen ── -->
+<!-- Error Screen -->
 <div class="layer" id="error-screen">
   <div id="error-msg"></div>
   <button class="mc-btn" id="btn-err-back">← 戻る</button>
 </div>
 
-<script type="module">
-// ═══════════════════════════════════════════════════════════════
-//  THREE.JS
-// ═══════════════════════════════════════════════════════════════
-import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.155.0/build/three.module.js';
+<!-- Three.js (global build — no module import needed) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
 
-// ═══════════════════════════════════════════════════════════════
-//  CONSTANTS
-// ═══════════════════════════════════════════════════════════════
-const VOXEL_SIZE      = 0.20;   // 20 cm per block
-const MAX_VOXELS      = 5000;
-const MAX_DEPTH_M     = 5.0;
-const DEPTH_SKIP      = 5;      // sample every N pixels in depth map
-const SCAN_PERIOD_MS  = 80;     // ms between depth scans
+<script>
+// ─── Global error catcher (shows errors in UI before app init) ───────────────
+window.onerror = function(msg, src, line) {
+  setCompat('❌ JS エラー<br>' + msg + '<br>line ' + line);
+};
+window.addEventListener('unhandledrejection', function(e) {
+  setCompat('❌ 非同期エラー<br>' + (e.reason?.message || e.reason || '不明'));
+});
 
-// ═══════════════════════════════════════════════════════════════
-//  TEXTURE GENERATION  (16×16 pixel-art Minecraft blocks)
-// ═══════════════════════════════════════════════════════════════
-function makeTex(fn, size = 16) {
-  const c = document.createElement('canvas');
-  c.width = c.height = size;
-  fn(c.getContext('2d'), size);
-  const t = new THREE.CanvasTexture(c);
+function setCompat(html) {
+  var el = document.getElementById('compat-info');
+  if (el) el.innerHTML = html;
+}
+function showError(msg) {
+  document.getElementById('error-msg').innerHTML = msg.replace(/\n/g,'<br>');
+  document.getElementById('error-screen').style.display = 'flex';
+}
+
+// ─── Boot ────────────────────────────────────────────────────────────────────
+// Wait for Three.js to be available
+(function boot() {
+  if (typeof THREE === 'undefined') {
+    setCompat('❌ 3Dライブラリ読込み失敗<br>ネット接続を確認してください');
+    return;
+  }
+  setCompat('✅ 3Dエンジン OK');
+  initApp();
+})();
+
+// ─── TEXTURE GENERATION ──────────────────────────────────────────────────────
+function makeTex(drawFn) {
+  var c = document.createElement('canvas');
+  c.width = c.height = 16;
+  drawFn(c.getContext('2d'));
+  var t = new THREE.CanvasTexture(c);
   t.magFilter = THREE.NearestFilter;
   t.minFilter = THREE.NearestFilter;
   t.generateMipmaps = false;
   return t;
 }
-
-function lcg(seed) {           // deterministic noise
-  let s = seed | 0;
-  return () => { s = (Math.imul(s, 1664525) + 1013904223) | 0; return (s >>> 0) / 0x100000000; };
-}
-
-const TEX = (() => {
-  // Grass top
-  const grassTop = makeTex(ctx => {
-    const r = lcg(1);
-    const pal = [[73,142,36],[58,128,28],[85,155,44],[66,135,32]];
-    for (let y=0;y<16;y++) for (let x=0;x<16;x++) {
-      const c = pal[r()*4|0]; ctx.fillStyle=`rgb(${c[0]},${c[1]},${c[2]})`; ctx.fillRect(x,y,1,1);
-    }
-  });
-
-  // Grass side (dirt lower, green strip top)
-  const grassSide = makeTex(ctx => {
-    const r=lcg(2), g=lcg(3);
-    for (let y=4;y<16;y++) for (let x=0;x<16;x++) {
-      const v=100+r()*40; ctx.fillStyle=`rgb(${v*.75|0},${v*.52|0},${v*.32|0})`; ctx.fillRect(x,y,1,1);
-    }
-    for (let y=0;y<4;y++) for (let x=0;x<16;x++) {
-      const v=g(); const c=[63+v*22|0,135+v*20|0,30+v*14|0];
-      ctx.fillStyle=`rgb(${c[0]},${c[1]},${c[2]})`; ctx.fillRect(x,y,1,1);
-    }
-  });
-
-  // Dirt
-  const dirt = makeTex(ctx => {
-    const r=lcg(4);
-    for (let y=0;y<16;y++) for (let x=0;x<16;x++) {
-      const v=108+r()*38; ctx.fillStyle=`rgb(${v*.75|0},${v*.52|0},${v*.32|0})`; ctx.fillRect(x,y,1,1);
-    }
-  });
-
-  // Stone
-  const stone = makeTex(ctx => {
-    const r=lcg(5);
-    for (let y=0;y<16;y++) for (let x=0;x<16;x++) {
-      const v=118+r()*26; ctx.fillStyle=`rgb(${v|0},${v|0},${v|0})`; ctx.fillRect(x,y,1,1);
-    }
-    ctx.strokeStyle='rgba(72,72,72,0.7)'; ctx.lineWidth=1; ctx.beginPath();
-    ctx.moveTo(2,1);ctx.lineTo(5,5);ctx.lineTo(9,4);ctx.lineTo(12,8);
-    ctx.moveTo(13,2);ctx.lineTo(15,6);
-    ctx.moveTo(0,10);ctx.lineTo(4,13);ctx.lineTo(8,11);ctx.lineTo(13,15);
-    ctx.stroke();
-  });
-
-  // Cobblestone
-  const cobble = makeTex(ctx => {
-    const r=lcg(6);
-    for (let y=0;y<16;y++) for (let x=0;x<16;x++) {
-      const v=88+r()*32; ctx.fillStyle=`rgb(${v|0},${v|0},${v|0})`; ctx.fillRect(x,y,1,1);
-    }
-    // irregular patches
-    ctx.fillStyle='rgba(60,60,60,0.5)';
-    [[1,1,6,5],[8,0,6,4],[2,7,5,6],[9,6,6,5],[0,12,7,4],[8,12,7,4]].forEach(([x,y,w,h])=>{
-      ctx.strokeStyle='rgba(50,50,50,0.8)'; ctx.lineWidth=1;
-      ctx.strokeRect(x+.5,y+.5,w,h);
-    });
-  });
-
-  // Brick
-  const brick = makeTex(ctx => {
-    ctx.fillStyle='#7a7a7a'; ctx.fillRect(0,0,16,16);
-    const r=lcg(7);
-    const bpal=[[160,60,38],[148,55,33],[172,66,42]];
-    for (let row=0;row<4;row++) {
-      const off=(row&1)*4;
-      for (let col=-1;col<4;col++) {
-        const c=bpal[r()*3|0];
-        ctx.fillStyle=`rgb(${c[0]},${c[1]},${c[2]})`;
-        ctx.fillRect(col*8+off,row*4,7,3);
-      }
-    }
-  });
-
-  // Sand
-  const sand = makeTex(ctx => {
-    const r=lcg(8);
-    for (let y=0;y<16;y++) for (let x=0;x<16;x++) {
-      const v=208+r()*28; ctx.fillStyle=`rgb(${v|0},${v*.94|0},${v*.62|0})`; ctx.fillRect(x,y,1,1);
-    }
-  });
-
-  // Wood log (top)
-  const woodTop = makeTex(ctx => {
-    const r=lcg(9);
-    for (let y=0;y<16;y++) for (let x=0;x<16;x++) {
-      const dx=x-7.5, dy=y-7.5, d=Math.sqrt(dx*dx+dy*dy);
-      const ring=Math.sin(d*1.3)*0.5+0.5;
-      const v=80+ring*50+r()*14;
-      ctx.fillStyle=`rgb(${v*.72|0},${v*.52|0},${v*.26|0})`; ctx.fillRect(x,y,1,1);
-    }
-  });
-
-  // Wood plank
-  const woodPlank = makeTex(ctx => {
-    const r=lcg(10);
-    for (let y=0;y<16;y++) {
-      const base=145+Math.floor(y/4)*8;
-      for (let x=0;x<16;x++) {
-        const v=base+r()*18-9; ctx.fillStyle=`rgb(${v*.72|0},${v*.52|0},${v*.26|0})`; ctx.fillRect(x,y,1,1);
-      }
-      if (y%4===0) { ctx.fillStyle='rgba(80,50,20,0.4)'; ctx.fillRect(0,y,16,1); }
-    }
-  });
-
-  // Leaves
-  const leaf = makeTex(ctx => {
-    const r=lcg(11);
-    for (let y=0;y<16;y++) for (let x=0;x<16;x++) {
-      if (r()>0.12) {
-        const v=40+r()*55; ctx.fillStyle=`rgb(${v*.55|0},${v|0},${v*.32|0})`; ctx.fillRect(x,y,1,1);
-      }
-    }
-  });
-
-  // Bedrock
-  const bedrock = makeTex(ctx => {
-    const r=lcg(12);
-    for (let y=0;y<16;y++) for (let x=0;x<16;x++) {
-      const v=40+r()*30; ctx.fillStyle=`rgb(${v|0},${v|0},${v|0})`; ctx.fillRect(x,y,1,1);
-    }
-    ctx.fillStyle='rgba(0,0,0,0.5)';
-    [[2,2,3,2],[8,1,2,3],[13,3,2,2],[1,8,3,3],[7,9,2,2],[12,8,3,3],[3,13,2,2],[10,12,3,2]].forEach(([x,y,w,h])=>ctx.fillRect(x,y,w,h));
-  });
-
-  // Glass
-  const glass = makeTex(ctx => {
-    ctx.fillStyle='rgba(160,220,255,0.3)'; ctx.fillRect(0,0,16,16);
-    ctx.strokeStyle='rgba(200,240,255,0.8)'; ctx.lineWidth=2;
-    ctx.strokeRect(1,1,14,14);
-    ctx.strokeStyle='rgba(200,240,255,0.3)'; ctx.lineWidth=1;
-    ctx.moveTo(4,4);ctx.lineTo(12,4);ctx.moveTo(4,12);ctx.lineTo(12,12); ctx.stroke();
-  });
-
-  // Water
-  const water = makeTex(ctx => {
-    const r=lcg(13);
-    for (let y=0;y<16;y++) for (let x=0;x<16;x++) {
-      const v=r(); ctx.fillStyle=`rgba(${50+v*20|0},${100+v*30|0},${200+v*40|0},0.85)`; ctx.fillRect(x,y,1,1);
-    }
-  });
-
-  return { grassTop,grassSide,dirt,stone,cobble,brick,sand,woodTop,woodPlank,leaf,bedrock,glass,water };
-})();
-
-// Build hotbar texture thumbnails
-const HOTBAR_TYPES = ['grass','stone','cobble','brick','sand','wood','leaf'];
-const hotbarEl = document.getElementById('hotbar');
-for (const type of HOTBAR_TYPES) {
-  const slot = document.createElement('div');
-  slot.className = 'hotbar-slot';
-  const c = document.createElement('canvas');
-  c.width = c.height = 32; c.style.width='32px'; c.style.height='32px';
-  // Render a mini block icon
-  const ctx2 = c.getContext('2d');
-  const texMap = {
-    grass: TEX.grassTop, stone: TEX.stone, cobble: TEX.cobble,
-    brick: TEX.brick, sand: TEX.sand, wood: TEX.woodTop, leaf: TEX.leaf
+function lcg(seed) {
+  var s = seed | 0;
+  return function() {
+    s = (Math.imul(s, 1664525) + 1013904223) | 0;
+    return (s >>> 0) / 0x100000000;
   };
-  if (texMap[type]?.image) ctx2.drawImage(texMap[type].image, 0, 0, 32, 32);
-  slot.appendChild(c);
-  hotbarEl.appendChild(slot);
 }
 
-// Materials cache
-const MAT_CACHE = {};
-function getMat(texName, transparent=false) {
-  const key = texName + (transparent?'_t':'');
-  if (!MAT_CACHE[key]) {
-    MAT_CACHE[key] = new THREE.MeshLambertMaterial({
-      map: TEX[texName],
-      transparent,
-      opacity: transparent ? 0.7 : 1.0,
+var TEX;
+function buildTextures() {
+  function grassTop() {
+    return makeTex(function(ctx) {
+      var r=lcg(1), pal=[[73,142,36],[58,128,28],[85,155,44],[66,135,32]];
+      for(var y=0;y<16;y++) for(var x=0;x<16;x++){var c=pal[r()*4|0];ctx.fillStyle='rgb('+c[0]+','+c[1]+','+c[2]+')';ctx.fillRect(x,y,1,1);}
     });
   }
-  return MAT_CACHE[key];
+  function grassSide() {
+    return makeTex(function(ctx) {
+      var r=lcg(2),g=lcg(3);
+      for(var y=4;y<16;y++) for(var x=0;x<16;x++){var v=100+r()*40;ctx.fillStyle='rgb('+(v*.75|0)+','+(v*.52|0)+','+(v*.32|0)+')';ctx.fillRect(x,y,1,1);}
+      for(var y=0;y<4;y++) for(var x=0;x<16;x++){var v=g();ctx.fillStyle='rgb('+(63+v*22|0)+','+(135+v*20|0)+','+(30+v*14|0)+')';ctx.fillRect(x,y,1,1);}
+    });
+  }
+  function dirt() {
+    return makeTex(function(ctx) {
+      var r=lcg(4);
+      for(var y=0;y<16;y++) for(var x=0;x<16;x++){var v=108+r()*38;ctx.fillStyle='rgb('+(v*.75|0)+','+(v*.52|0)+','+(v*.32|0)+')';ctx.fillRect(x,y,1,1);}
+    });
+  }
+  function stone() {
+    return makeTex(function(ctx) {
+      var r=lcg(5);
+      for(var y=0;y<16;y++) for(var x=0;x<16;x++){var v=118+r()*26;ctx.fillStyle='rgb('+(v|0)+','+(v|0)+','+(v|0)+')';ctx.fillRect(x,y,1,1);}
+      ctx.strokeStyle='rgba(70,70,70,0.7)';ctx.lineWidth=1;ctx.beginPath();
+      ctx.moveTo(2,1);ctx.lineTo(5,5);ctx.lineTo(9,4);ctx.lineTo(12,8);
+      ctx.moveTo(0,10);ctx.lineTo(4,13);ctx.lineTo(8,11);ctx.lineTo(13,15);
+      ctx.stroke();
+    });
+  }
+  function cobble() {
+    return makeTex(function(ctx) {
+      var r=lcg(6);
+      for(var y=0;y<16;y++) for(var x=0;x<16;x++){var v=88+r()*32;ctx.fillStyle='rgb('+(v|0)+','+(v|0)+','+(v|0)+')';ctx.fillRect(x,y,1,1);}
+      ctx.strokeStyle='rgba(50,50,50,0.8)';ctx.lineWidth=1;
+      [[1,1,6,5],[8,0,6,4],[2,7,5,6],[9,6,6,5],[0,12,7,4],[8,12,7,4]].forEach(function(b){ctx.strokeRect(b[0]+.5,b[1]+.5,b[2],b[3]);});
+    });
+  }
+  function brick() {
+    return makeTex(function(ctx) {
+      ctx.fillStyle='#7a7a7a';ctx.fillRect(0,0,16,16);
+      var r=lcg(7),bp=[[160,60,38],[148,55,33],[172,66,42]];
+      for(var row=0;row<4;row++){var off=(row&1)*4;for(var col=-1;col<4;col++){var c=bp[r()*3|0];ctx.fillStyle='rgb('+c[0]+','+c[1]+','+c[2]+')';ctx.fillRect(col*8+off,row*4,7,3);}}
+    });
+  }
+  function sand() {
+    return makeTex(function(ctx) {
+      var r=lcg(8);
+      for(var y=0;y<16;y++) for(var x=0;x<16;x++){var v=208+r()*28;ctx.fillStyle='rgb('+(v|0)+','+(v*.94|0)+','+(v*.62|0)+')';ctx.fillRect(x,y,1,1);}
+    });
+  }
+  function woodPlank() {
+    return makeTex(function(ctx) {
+      var r=lcg(9);
+      for(var y=0;y<16;y++){var base=145+Math.floor(y/4)*8;for(var x=0;x<16;x++){var v=base+r()*16-8;ctx.fillStyle='rgb('+(v*.72|0)+','+(v*.52|0)+','+(v*.26|0)+')';ctx.fillRect(x,y,1,1);}if(y%4===0){ctx.fillStyle='rgba(70,40,10,.4)';ctx.fillRect(0,y,16,1);}}
+    });
+  }
+  function leaf() {
+    return makeTex(function(ctx) {
+      var r=lcg(10);
+      for(var y=0;y<16;y++) for(var x=0;x<16;x++){if(r()>0.12){var v=40+r()*55;ctx.fillStyle='rgb('+(v*.5|0)+','+(v|0)+','+(v*.3|0)+')';ctx.fillRect(x,y,1,1);}}
+    });
+  }
+  function bedrock() {
+    return makeTex(function(ctx) {
+      var r=lcg(11);
+      for(var y=0;y<16;y++) for(var x=0;x<16;x++){var v=40+r()*28;ctx.fillStyle='rgb('+(v|0)+','+(v|0)+','+(v|0)+')';ctx.fillRect(x,y,1,1);}
+      ctx.fillStyle='rgba(0,0,0,.55)';
+      [[2,2,3,2],[8,1,2,3],[13,3,2,2],[1,8,3,3],[7,9,2,2],[12,8,3,3]].forEach(function(b){ctx.fillRect(b[0],b[1],b[2],b[3]);});
+    });
+  }
+
+  TEX = {
+    grassTop:  grassTop(),
+    grassSide: grassSide(),
+    dirt:      dirt(),
+    stone:     stone(),
+    cobble:    cobble(),
+    brick:     brick(),
+    sand:      sand(),
+    woodPlank: woodPlank(),
+    leaf:      leaf(),
+    bedrock:   bedrock(),
+  };
 }
 
-// [+X, -X, +Y, -Y, +Z, -Z]
-function getBlockMats(type) {
+// ─── MATERIALS ───────────────────────────────────────────────────────────────
+var matCache = {};
+function mat(key) {
+  if (!matCache[key]) matCache[key] = new THREE.MeshLambertMaterial({ map: TEX[key] });
+  return matCache[key];
+}
+function blockMats(type) {
   switch (type) {
-    case 'grass':   return [getMat('grassSide'),getMat('grassSide'),getMat('grassTop'),getMat('dirt'),getMat('grassSide'),getMat('grassSide')];
-    case 'dirt':    return [getMat('dirt'),getMat('dirt'),getMat('dirt'),getMat('dirt'),getMat('dirt'),getMat('dirt')];
-    case 'stone':   return [getMat('stone'),getMat('stone'),getMat('stone'),getMat('stone'),getMat('stone'),getMat('stone')];
-    case 'cobble':  return [getMat('cobble'),getMat('cobble'),getMat('cobble'),getMat('cobble'),getMat('cobble'),getMat('cobble')];
-    case 'brick':   return [getMat('brick'),getMat('brick'),getMat('brick'),getMat('brick'),getMat('brick'),getMat('brick')];
-    case 'sand':    return [getMat('sand'),getMat('sand'),getMat('sand'),getMat('sand'),getMat('sand'),getMat('sand')];
-    case 'wood':    return [getMat('woodPlank'),getMat('woodPlank'),getMat('woodTop'),getMat('woodTop'),getMat('woodPlank'),getMat('woodPlank')];
-    case 'leaf':    return [getMat('leaf'),getMat('leaf'),getMat('leaf'),getMat('leaf'),getMat('leaf'),getMat('leaf')];
-    case 'bedrock': return [getMat('bedrock'),getMat('bedrock'),getMat('bedrock'),getMat('bedrock'),getMat('bedrock'),getMat('bedrock')];
-    case 'glass':   return [getMat('glass',true),getMat('glass',true),getMat('glass',true),getMat('glass',true),getMat('glass',true),getMat('glass',true)];
-    case 'water':   return [getMat('water',true),getMat('water',true),getMat('water',true),getMat('water',true),getMat('water',true),getMat('water',true)];
-    default:        return [getMat('stone'),getMat('stone'),getMat('stone'),getMat('stone'),getMat('stone'),getMat('stone')];
+    case 'grass':   return [mat('grassSide'),mat('grassSide'),mat('grassTop'),mat('dirt'),mat('grassSide'),mat('grassSide')];
+    case 'dirt':    return [mat('dirt'),mat('dirt'),mat('dirt'),mat('dirt'),mat('dirt'),mat('dirt')];
+    case 'stone':   return [mat('stone'),mat('stone'),mat('stone'),mat('stone'),mat('stone'),mat('stone')];
+    case 'cobble':  return [mat('cobble'),mat('cobble'),mat('cobble'),mat('cobble'),mat('cobble'),mat('cobble')];
+    case 'brick':   return [mat('brick'),mat('brick'),mat('brick'),mat('brick'),mat('brick'),mat('brick')];
+    case 'sand':    return [mat('sand'),mat('sand'),mat('sand'),mat('sand'),mat('sand'),mat('sand')];
+    case 'wood':    return [mat('woodPlank'),mat('woodPlank'),mat('woodPlank'),mat('woodPlank'),mat('woodPlank'),mat('woodPlank')];
+    case 'leaf':    return [mat('leaf'),mat('leaf'),mat('leaf'),mat('leaf'),mat('leaf'),mat('leaf')];
+    case 'bedrock': return [mat('bedrock'),mat('bedrock'),mat('bedrock'),mat('bedrock'),mat('bedrock'),mat('bedrock')];
+    default:        return [mat('stone'),mat('stone'),mat('stone'),mat('stone'),mat('stone'),mat('stone')];
   }
 }
 
-// ═══════════════════════════════════════════════════════════════
-//  THREE.JS SCENE SETUP
-// ═══════════════════════════════════════════════════════════════
-const canvas  = document.getElementById('main-canvas');
-const renderer = new THREE.WebGLRenderer({ canvas, antialias:false, alpha:true });
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.xr.enabled = true;
+// ─── APP INIT ────────────────────────────────────────────────────────────────
+var renderer, scene, camera;
+var voxelData = {}, voxelMesh = {};
+var xrSession = null, xrRefSpace = null;
+var scanning = true, depthOK = false;
+var lastScan = 0, frameN = 0, lastFpsT = 0;
+var demoLoop = null;
 
-const scene  = new THREE.Scene();
-scene.fog    = new THREE.Fog(0x87CEEB, 10, 30);
+var VOXEL   = 0.20;   // 20 cm
+var MAX_V   = 5000;
+var MAX_D   = 5.0;    // max depth metres
+var D_SKIP  = 5;      // depth sample stride (pixels)
+var SCAN_MS = 80;
 
-const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.01, 60);
-camera.position.set(0, 1.6, 0);
+function vkey(ix,iy,iz){ return ix+'_'+iy+'_'+iz; }
+function w2i(wx,wy,wz){ return [Math.round(wx/VOXEL), Math.round(wy/VOXEL), Math.round(wz/VOXEL)]; }
+function i2w(ix,iy,iz){ return new THREE.Vector3(ix*VOXEL, iy*VOXEL, iz*VOXEL); }
 
-// Lighting
-scene.add(new THREE.AmbientLight(0xffffff, 0.75));
-const sun = new THREE.DirectionalLight(0xFFF5E0, 0.6);
-sun.position.set(5, 8, 3);
-scene.add(sun);
-scene.add(Object.assign(new THREE.DirectionalLight(0xB0C8FF, 0.25), { position: new THREE.Vector3(-3,1,-4) }));
-
-// ═══════════════════════════════════════════════════════════════
-//  VOXEL SYSTEM
-// ═══════════════════════════════════════════════════════════════
-const blockGeo  = new THREE.BoxGeometry(VOXEL_SIZE, VOXEL_SIZE, VOXEL_SIZE);
-const voxelData = new Map();   // "ix,iy,iz" → {ix,iy,iz}
-const voxelMesh = new Map();   // "ix,iy,iz" → THREE.Mesh
-
-const key = (ix,iy,iz) => `${ix},${iy},${iz}`;
-const w2i = (wx,wy,wz) => [Math.round(wx/VOXEL_SIZE), Math.round(wy/VOXEL_SIZE), Math.round(wz/VOXEL_SIZE)];
-const i2w = (ix,iy,iz) => new THREE.Vector3(ix*VOXEL_SIZE, iy*VOXEL_SIZE, iz*VOXEL_SIZE);
-
-function blockType(ix, iy, iz) {
-  // Choose type based on whether top face is exposed and height
-  const topExposed = !voxelData.has(key(ix, iy+1, iz));
-  if (topExposed) return 'grass';
-  if (!voxelData.has(key(ix, iy-1, iz))) return 'dirt';
-  return 'stone';
+function blockType(ix,iy,iz) {
+  return voxelData[vkey(ix,iy+1,iz)] ? 'stone' : 'grass';
 }
 
-function addVoxel(wx, wy, wz) {
-  if (voxelData.size >= MAX_VOXELS) return false;
-  const [ix,iy,iz] = w2i(wx,wy,wz);
-  const k = key(ix,iy,iz);
-  if (voxelData.has(k)) return false;
-
-  voxelData.set(k, {ix,iy,iz});
-  const mesh = new THREE.Mesh(blockGeo, getBlockMats(blockType(ix,iy,iz)));
+var blockGeo;
+function addVoxel(wx,wy,wz) {
+  var count = Object.keys(voxelData).length;
+  if (count >= MAX_V) return;
+  var idx = w2i(wx,wy,wz);
+  var ix=idx[0], iy=idx[1], iz=idx[2];
+  var k = vkey(ix,iy,iz);
+  if (voxelData[k]) return;
+  voxelData[k] = true;
+  var mesh = new THREE.Mesh(blockGeo, blockMats(blockType(ix,iy,iz)));
   mesh.position.copy(i2w(ix,iy,iz));
   scene.add(mesh);
-  voxelMesh.set(k, mesh);
-
-  // Refresh block below (may change grass→stone)
-  const belowKey = key(ix,iy-1,iz);
-  if (voxelMesh.has(belowKey)) {
-    voxelMesh.get(belowKey).material = getBlockMats(blockType(ix,iy-1,iz));
-  }
-
-  document.getElementById('block-count').textContent = voxelData.size;
-  return true;
+  voxelMesh[k] = mesh;
+  // update block below (might become stone)
+  var bk = vkey(ix,iy-1,iz);
+  if (voxelMesh[bk]) voxelMesh[bk].material = blockMats(blockType(ix,iy-1,iz));
+  document.getElementById('block-count').textContent = count + 1;
 }
 
 function clearVoxels() {
-  for (const m of voxelMesh.values()) { scene.remove(m); }
-  voxelMesh.clear(); voxelData.clear();
+  for (var k in voxelMesh) { scene.remove(voxelMesh[k]); }
+  voxelData = {}; voxelMesh = {};
   document.getElementById('block-count').textContent = '0';
 }
 
-// ═══════════════════════════════════════════════════════════════
-//  WEBXR AR SESSION
-// ═══════════════════════════════════════════════════════════════
-let xrSession    = null;
-let xrRefSpace   = null;
-let scanning     = true;
-let depthEnabled = false;
-let lastScan     = 0;
-let frameCount   = 0, lastFpsTime = 0;
+// ─── MAIN INIT ───────────────────────────────────────────────────────────────
+function initApp() {
+  // Build textures
+  buildTextures();
+
+  // Three.js
+  var canvas = document.getElementById('main-canvas');
+  renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: false, alpha: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.xr.enabled = true;
+
+  scene = new THREE.Scene();
+  scene.fog = new THREE.Fog(0x87CEEB, 12, 30);
+
+  camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.01, 60);
+  camera.position.set(0, 1.6, 0);
+
+  scene.add(new THREE.AmbientLight(0xffffff, 0.75));
+  var sun = new THREE.DirectionalLight(0xFFF5E0, 0.6);
+  sun.position.set(5, 8, 3); scene.add(sun);
+  var fill = new THREE.DirectionalLight(0xB0C8FF, 0.25);
+  fill.position.set(-3, 1, -4); scene.add(fill);
+
+  blockGeo = new THREE.BoxGeometry(VOXEL, VOXEL, VOXEL);
+
+  // Clouds on start screen
+  makeClouds();
+
+  // Compat check (async)
+  checkCompat();
+
+  // Resize
+  window.addEventListener('resize', function() {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+  });
+
+  // Buttons
+  document.getElementById('btn-start').addEventListener('click', startAR);
+  document.getElementById('btn-demo').addEventListener('click', startDemo);
+  document.getElementById('btn-toggle').addEventListener('click', toggleScan);
+  document.getElementById('btn-clear').addEventListener('click', clearVoxels);
+  document.getElementById('btn-exit').addEventListener('click', function() { if(xrSession) xrSession.end(); });
+  document.getElementById('btn-err-back').addEventListener('click', function() { document.getElementById('error-screen').style.display='none'; });
+}
+
+// ─── COMPAT CHECK ────────────────────────────────────────────────────────────
+function checkCompat() {
+  var lines = ['✅ 3Dエンジン OK'];
+  if (!navigator.xr) {
+    lines.push('❌ WebXR 非対応');
+    lines.push('Safari 15.4+ が必要です');
+    setCompat(lines.join('<br>'));
+    return;
+  }
+  lines.push('✅ WebXR あり');
+  navigator.xr.isSessionSupported('immersive-ar').then(function(ok) {
+    lines.push(ok ? '✅ AR 対応' : '❌ AR 非対応 (Safari で開いてください)');
+    setCompat(lines.join('<br>'));
+  }).catch(function(e) {
+    lines.push('⚠ AR 確認失敗: ' + e.message);
+    setCompat(lines.join('<br>'));
+  });
+}
+
+// ─── AR SESSION ──────────────────────────────────────────────────────────────
+function startAR() {
+  if (!navigator.xr) { showError('WebXR が非対応です。\nSafari 15.4+ でお試しください。'); return; }
+
+  navigator.xr.isSessionSupported('immersive-ar').then(function(ok) {
+    if (!ok) { showError('AR セッション非対応です。\niPhone 12+ の Safari で\nお試しください。'); return; }
+
+    // First try with depth-sensing optional
+    navigator.xr.requestSession('immersive-ar', {
+      requiredFeatures: ['local-floor'],
+      optionalFeatures: ['depth-sensing'],
+      depthSensing: {
+        usagePreference: ['cpu-optimized'],
+        dataFormatPreference: ['luminance-alpha'],
+      }
+    }).catch(function() {
+      // Fallback: no depth sensing
+      return navigator.xr.requestSession('immersive-ar', {
+        requiredFeatures: ['local-floor']
+      });
+    }).then(function(session) {
+      onSessionStart(session);
+    }).catch(function(e) {
+      showError('AR 開始エラー:\n' + e.message);
+    });
+  }).catch(function(e) {
+    showError('AR 確認エラー:\n' + e.message);
+  });
+}
+
+function onSessionStart(session) {
+  xrSession = session;
+  depthOK = !!(session.depthUsage);
+
+  renderer.xr.setReferenceSpaceType('local-floor');
+  renderer.xr.setSession(session).then(function() {
+    session.requestReferenceSpace('local-floor').catch(function() {
+      return session.requestReferenceSpace('local');
+    }).then(function(refSpace) {
+      xrRefSpace = refSpace;
+      session.addEventListener('end', onSessionEnd);
+
+      document.getElementById('start-screen').style.display = 'none';
+      document.getElementById('hud').style.display = 'block';
+
+      var badge = document.getElementById('lidar-badge');
+      badge.textContent = depthOK ? '✓ LiDAR 有効 — スキャン中' : '⚠ LiDAR 無効 (非対応機種)';
+      badge.style.color  = depthOK ? '#5EE' : '#FA5';
+
+      renderer.setAnimationLoop(onXRFrame);
+    });
+  });
+}
 
 // Reusable math objects
-const _invProj = new THREE.Matrix4();
-const _camMat  = new THREE.Matrix4();
-const _v4      = new THREE.Vector4();
-const _v3      = new THREE.Vector3();
+var _m4a = new THREE.Matrix4();
+var _m4b = new THREE.Matrix4();
+var _v4  = new THREE.Vector4();
+var _v3  = new THREE.Vector3();
 
 function processDepth(depthInfo, view) {
-  const { width: dw, height: dh } = depthInfo;
-  _invProj.fromArray(view.projectionMatrix).invert();
-  _camMat.fromArray(view.transform.matrix);
+  var dw = depthInfo.width, dh = depthInfo.height;
+  _m4a.fromArray(view.projectionMatrix).invert();   // inv projection
+  _m4b.fromArray(view.transform.matrix);            // view → world
 
-  for (let py = 0; py < dh; py += DEPTH_SKIP) {
-    for (let px = 0; px < dw; px += DEPTH_SKIP) {
-      const u = (px + 0.5) / dw;
-      const v = (py + 0.5) / dh;
-      const depth = depthInfo.getDepthInMeters(u, v);
-      if (!isFinite(depth) || depth < 0.15 || depth > MAX_DEPTH_M) continue;
+  for (var py = 0; py < dh; py += D_SKIP) {
+    for (var px = 0; px < dw; px += D_SKIP) {
+      var u = (px + 0.5) / dw;
+      var v = (py + 0.5) / dh;
+      var depth = depthInfo.getDepthInMeters(u, v);
+      if (!isFinite(depth) || depth < 0.15 || depth > MAX_D) continue;
 
-      // NDC → view-space direction (WebGL: Y up, -Z forward)
-      const ndcX =  u * 2 - 1;
-      const ndcY = -(v * 2 - 1);
-      _v4.set(ndcX, ndcY, -1, 1).applyMatrix4(_invProj);
-      _v3.set(_v4.x / _v4.w, _v4.y / _v4.w, _v4.z / _v4.w).normalize();
-      _v3.multiplyScalar(depth);
+      // NDC → view-space direction
+      var ndcX =  u * 2 - 1;
+      var ndcY = -(v * 2 - 1);
+      _v4.set(ndcX, ndcY, -1, 1).applyMatrix4(_m4a);
+      _v3.set(_v4.x/_v4.w, _v4.y/_v4.w, _v4.z/_v4.w).normalize().multiplyScalar(depth);
 
-      // View-space → world-space
-      _v4.set(_v3.x, _v3.y, _v3.z, 1).applyMatrix4(_camMat);
+      // View → world
+      _v4.set(_v3.x, _v3.y, _v3.z, 1).applyMatrix4(_m4b);
       addVoxel(_v4.x, _v4.y, _v4.z);
     }
   }
-  document.getElementById('depth-val').textContent =
-    depthInfo.getDepthInMeters(0.5, 0.5).toFixed(2);
+  document.getElementById('depth-val').textContent = depthInfo.getDepthInMeters(0.5, 0.5).toFixed(2);
 }
 
 function onXRFrame(time, frame) {
-  frameCount++;
-  if (time - lastFpsTime > 1000) {
-    document.getElementById('fps-val').textContent = frameCount;
-    frameCount = 0; lastFpsTime = time;
+  frameN++;
+  if (time - lastFpsT > 1000) {
+    document.getElementById('fps-val').textContent = frameN;
+    frameN = 0; lastFpsT = time;
   }
-
   if (!frame) { renderer.render(scene, camera); return; }
 
-  const pose = frame.getViewerPose(xrRefSpace);
+  var pose = frame.getViewerPose(xrRefSpace);
   if (!pose) { renderer.render(scene, camera); return; }
 
-  if (scanning && depthEnabled && time - lastScan > SCAN_PERIOD_MS) {
+  if (scanning && depthOK && (time - lastScan) > SCAN_MS) {
     lastScan = time;
-    for (const view of pose.views) {
-      const di = frame.getDepthInformation?.(view);
-      if (di) processDepth(di, view);
+    var views = pose.views;
+    for (var i = 0; i < views.length; i++) {
+      var di = frame.getDepthInformation && frame.getDepthInformation(views[i]);
+      if (di) processDepth(di, views[i]);
     }
   }
   renderer.render(scene, camera);
 }
 
-async function startAR() {
-  if (!navigator.xr) return showError('WebXR が非対応です。\niPhone Safari 15.4+\nが必要です。');
-
-  const arOk = await navigator.xr.isSessionSupported('immersive-ar').catch(() => false);
-  if (!arOk) return showError('AR セッションが\n非対応です。\niPhone 12 Pro以降の\nSafari でお試しください。');
-
-  try {
-    // Try with optional depth sensing
-    try {
-      xrSession = await navigator.xr.requestSession('immersive-ar', {
-        requiredFeatures: ['local-floor'],
-        optionalFeatures: ['depth-sensing'],
-        depthSensing: {
-          usagePreference: ['cpu-optimized'],
-          dataFormatPreference: ['luminance-alpha'],
-        },
-      });
-      depthEnabled = xrSession.depthUsage != null;
-    } catch {
-      xrSession = await navigator.xr.requestSession('immersive-ar', {
-        requiredFeatures: ['local-floor'],
-      });
-      depthEnabled = false;
-    }
-
-    renderer.xr.setReferenceSpaceType('local-floor');
-    await renderer.xr.setSession(xrSession);
-    xrRefSpace = await xrSession.requestReferenceSpace('local-floor')
-                               .catch(() => xrSession.requestReferenceSpace('local'));
-
-    xrSession.addEventListener('end', onXREnd);
-
-    // Show HUD
-    document.getElementById('start-screen').style.display = 'none';
-    document.getElementById('hud').style.display = 'block';
-
-    const badge = document.getElementById('lidar-badge');
-    if (depthEnabled) {
-      badge.textContent = '✓ LiDAR 有効 — スキャン中';
-      badge.style.color = '#5EE';
-    } else {
-      badge.textContent = '⚠ LiDAR 無効 (非対応)';
-      badge.style.color = '#FA5';
-    }
-
-    renderer.setAnimationLoop(onXRFrame);
-
-  } catch(e) {
-    showError(`AR 開始エラー:\n${e.message}`);
-  }
-}
-
-function onXREnd() {
+function onSessionEnd() {
   xrSession = null;
   renderer.setAnimationLoop(null);
   document.getElementById('hud').style.display = 'none';
   document.getElementById('start-screen').style.display = 'flex';
 }
 
-// ═══════════════════════════════════════════════════════════════
-//  DEMO MODE
-// ═══════════════════════════════════════════════════════════════
+function toggleScan() {
+  scanning = !scanning;
+  document.getElementById('btn-toggle').textContent  = scanning ? '停止' : '再開';
+  document.getElementById('status-bar').textContent  = scanning ? 'スキャン中...' : '一時停止';
+}
+
+// ─── DEMO MODE ───────────────────────────────────────────────────────────────
 function startDemo() {
   document.getElementById('start-screen').style.display = 'none';
   document.getElementById('hud').style.display = 'block';
   document.getElementById('lidar-badge').textContent = '🎮 デモモード';
   document.getElementById('lidar-badge').style.color = '#FF5';
-  document.getElementById('status-bar').textContent = 'デモ — カメラ不使用';
+  document.getElementById('status-bar').textContent  = 'デモ表示中';
   document.getElementById('btn-toggle').style.display = 'none';
 
-  // Place demo scene: rolling terrain
   camera.position.set(0, 1.4, 2.4);
   camera.lookAt(0, 0, 0);
 
-  const terrain = [
-    [0,0],[1,0],[2,0],[3,0],[-1,0],[-2,0],[-3,0],
-    [0,0,0,1],[1,0,1,1],[-1,0,1,1],
-    [0,0,0,-1],[1,0,1,-1],[-1,0,1,-1],
-    [2,0,2,1],[3,0,3,1],[-2,0,-2,1],
-  ];
-  // Flat ground 7×7
-  for (let x=-3;x<=3;x++) for (let z=-3;z<=3;z++) addVoxel(x*VOXEL_SIZE, 0, z*VOXEL_SIZE);
-  // A few hills
-  [[1,1,1],[1,2,1],[2,1,1],[2,1,2],[-2,1,-1],[-2,2,-1],[-1,1,2],
-   [0,1,-2],[0,2,-2],[0,3,-2]].forEach(([x,y,z]) => addVoxel(x*VOXEL_SIZE,y*VOXEL_SIZE,z*VOXEL_SIZE));
+  // Ground plane 7×7
+  for (var x=-3; x<=3; x++) for (var z=-3; z<=3; z++) addVoxel(x*VOXEL, 0, z*VOXEL);
+  // Hills
+  [[1,1,1],[1,2,1],[2,1,1],[-2,1,-1],[-2,2,-1],[0,1,-2],[0,2,-2],[0,3,-2]].forEach(function(p){
+    addVoxel(p[0]*VOXEL, p[1]*VOXEL, p[2]*VOXEL);
+  });
 
-  // Rotating preview
-  let angle = 0;
+  var angle = 0;
   function loop() {
     angle += 0.004;
     camera.position.set(Math.sin(angle)*3.5, 1.6, Math.cos(angle)*3.5);
     camera.lookAt(0, 0.2, 0);
     renderer.render(scene, camera);
-    if (!xrSession) requestAnimationFrame(loop);
+    if (!xrSession) demoLoop = requestAnimationFrame(loop);
   }
-  requestAnimationFrame(loop);
+  demoLoop = requestAnimationFrame(loop);
+
+  // Exit demo
+  document.getElementById('btn-exit').addEventListener('click', function exitDemo() {
+    if (demoLoop) { cancelAnimationFrame(demoLoop); demoLoop = null; }
+    clearVoxels();
+    document.getElementById('hud').style.display = 'none';
+    document.getElementById('start-screen').style.display = 'flex';
+    document.getElementById('btn-toggle').style.display = '';
+    document.getElementById('btn-exit').removeEventListener('click', exitDemo);
+  }, { once: true });
 }
 
-// ═══════════════════════════════════════════════════════════════
-//  ERROR / COMPAT
-// ═══════════════════════════════════════════════════════════════
-function showError(msg) {
-  document.getElementById('error-msg').innerHTML = msg.replace(/\n/g,'<br>');
-  document.getElementById('error-screen').style.display = 'flex';
-}
-
-// Animated pixel clouds
-(function makeClouds() {
-  const container = document.getElementById('clouds');
-  for (let i=0; i<6; i++) {
-    const w = 40+Math.random()*80, h = 16+Math.random()*24;
-    const el = document.createElement('div');
+// ─── PIXEL CLOUDS ────────────────────────────────────────────────────────────
+function makeClouds() {
+  var cont = document.getElementById('cloud-container');
+  for (var i = 0; i < 6; i++) {
+    var el = document.createElement('div');
+    var w = 48 + Math.random()*90, h = 18 + Math.random()*22;
     el.className = 'cloud';
-    el.style.cssText = `width:${w}px;height:${h}px;top:${Math.random()*40}%;left:${Math.random()*100}%;
-      border-radius:4px;animation:cloudMove ${18+Math.random()*20}s linear infinite;
-      animation-delay:-${Math.random()*20}s;`;
-    container.appendChild(el);
+    el.style.cssText = 'width:'+w+'px;height:'+h+'px;top:'+(Math.random()*50)+'%;'
+      +'left:'+(Math.random()*100)+'%;'
+      +'animation:cloudMove '+(18+Math.random()*22)+'s linear infinite;'
+      +'animation-delay:-'+(Math.random()*22)+'s;';
+    cont.appendChild(el);
   }
-  const style = document.createElement('style');
-  style.textContent = '@keyframes cloudMove{from{transform:translateX(-150px)}to{transform:translateX(110vw)}}';
-  document.head.appendChild(style);
-})();
-
-// Check WebXR compat
-(async () => {
-  const lines = [];
-  if (navigator.xr) {
-    const ar = await navigator.xr.isSessionSupported('immersive-ar').catch(()=>false);
-    lines.push(ar ? '✅ WebXR AR 対応' : '❌ WebXR AR 非対応');
-    // Check depth sensing
-    if (ar) {
-      try {
-        const res = await navigator.xr.isSessionSupported('immersive-ar');
-        // We check depthSensing capability indirectly via UA
-        const ua = navigator.userAgent;
-        const lidarModel = /iPhone1[2-9],|iPhone[2-9]\d,/.test(ua);
-        lines.push(lidarModel ? '✅ LiDAR 対応機種' : '⚠️ LiDAR 確認できず');
-      } catch {}
-    }
-  } else {
-    lines.push('❌ WebXR 未対応ブラウザ');
-    lines.push('Safari 15.4+ をお使いください');
-  }
-  document.getElementById('compat-info').innerHTML = lines.join('<br>');
-})();
-
-// ═══════════════════════════════════════════════════════════════
-//  EVENT LISTENERS
-// ═══════════════════════════════════════════════════════════════
-document.getElementById('btn-start').addEventListener('click', startAR);
-document.getElementById('btn-demo').addEventListener('click', startDemo);
-
-document.getElementById('btn-toggle').addEventListener('click', () => {
-  scanning = !scanning;
-  document.getElementById('btn-toggle').textContent = scanning ? 'スキャン停止' : 'スキャン再開';
-  document.getElementById('status-bar').textContent  = scanning ? 'スキャン中...' : '停止中';
-});
-document.getElementById('btn-clear').addEventListener('click', clearVoxels);
-document.getElementById('btn-exit').addEventListener('click', () => xrSession?.end());
-document.getElementById('btn-err-back').addEventListener('click', () => {
-  document.getElementById('error-screen').style.display = 'none';
-});
-
-window.addEventListener('resize', () => {
-  camera.aspect = window.innerWidth / window.innerHeight;
-  camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth, window.innerHeight);
-});
+}
 </script>
 </body>
 </html>
