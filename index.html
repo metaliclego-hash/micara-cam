@@ -3,582 +3,604 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>Micra-Cam | LiDAR × Minecraft</title>
+<title>Micra-Cam</title>
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
 <style>
 * { margin:0; padding:0; box-sizing:border-box; }
-body { background:#000; overflow:hidden; touch-action:none; font-family:'Press Start 2P',monospace; }
+body { background:#000; overflow:hidden; touch-action:none; }
 
-#main-canvas { position:fixed; top:0; left:0; width:100vw; height:100vh; display:block; }
+/* カメラ映像（最背面） */
+#cam { position:fixed; top:0; left:0; width:100%; height:100%; object-fit:cover; z-index:0; }
+/* Three.jsキャンバス（透明、カメラの上） */
+#cvs { position:fixed; top:0; left:0; z-index:1; display:block; }
 
-.layer { position:fixed; top:0; left:0; width:100%; height:100%; z-index:10; }
+.layer { position:fixed; top:0; left:0; width:100%; height:100%; z-index:10; font-family:'Press Start 2P',monospace; }
 
-/* ── Start Screen ── */
-#start-screen {
-  display:flex; flex-direction:column;
-  align-items:center; justify-content:center;
-  background:linear-gradient(180deg,#1a6e9f 0%,#3399cc 40%,#87CEEB 65%,#5D8A2A 80%,#3f6014 100%);
+/* ── スタート画面 ── */
+#start {
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  background:linear-gradient(180deg,#1a6e9f 0%,#3399cc 38%,#87CEEB 62%,#5D8A2A 78%,#3a5e10 100%);
 }
-.mc-logo {
-  font-size:clamp(22px,7vw,56px); color:#FFFF00;
-  text-shadow:4px 4px 0 #808000,6px 6px 0 rgba(0,0,0,0.35);
-  letter-spacing:3px; z-index:1; user-select:none;
+.logo {
+  font-size:clamp(22px,7vw,56px); color:#FF0; letter-spacing:3px;
+  text-shadow:4px 4px 0 #808000, 6px 6px 0 rgba(0,0,0,.3); user-select:none;
 }
-.mc-sub {
+.sub {
   font-size:clamp(7px,2vw,11px); color:#fff;
-  text-shadow:2px 2px 0 #000; margin:10px 0 44px;
-  z-index:1; text-align:center; line-height:2;
+  text-shadow:2px 2px 0 #000; margin:10px 0 44px; text-align:center; line-height:2;
 }
-.mc-btn {
-  display:block; width:clamp(220px,65vw,400px);
-  padding:13px 10px; margin:5px 0;
-  font-family:'Press Start 2P',monospace;
-  font-size:clamp(9px,2.2vw,13px); color:#fff;
-  text-shadow:2px 2px 0 rgba(0,0,0,0.6);
-  background:#838383; border:none; cursor:pointer; text-align:center; z-index:1;
+.btn {
+  display:block; width:clamp(220px,65vw,400px); padding:13px 10px; margin:5px 0;
+  font-family:'Press Start 2P',monospace; font-size:clamp(9px,2.2vw,13px);
+  color:#fff; text-shadow:2px 2px 0 rgba(0,0,0,.6); text-align:center; cursor:pointer; border:none;
+  background:#838383;
   border-top:3px solid #c6c6c6; border-left:3px solid #c6c6c6;
   border-right:3px solid #3d3d3d; border-bottom:3px solid #3d3d3d;
-  -webkit-tap-highlight-color:transparent;
+  -webkit-tap-highlight-color:transparent; text-decoration:none; line-height:normal;
 }
-.mc-btn:active {
-  border-top-color:#3d3d3d; border-left-color:#3d3d3d;
-  border-right-color:#c6c6c6; border-bottom-color:#c6c6c6;
-}
-.mc-btn.green { background:#5a832a; border-top-color:#8fbf5a; border-left-color:#8fbf5a; border-right-color:#2a4a10; border-bottom-color:#2a4a10; }
-.mc-btn.red   { background:#832a2a; border-top-color:#bf5a5a; border-left-color:#bf5a5a; border-right-color:#4a1010; border-bottom-color:#4a1010; }
+.btn:active { border-color:#3d3d3d #c6c6c6 #c6c6c6 #3d3d3d; }
+.btn.g { background:#5a832a; border-top-color:#8fbf5a; border-left-color:#8fbf5a; border-right-color:#2a4a10; border-bottom-color:#2a4a10; }
+.btn.r { background:#832a2a; border-top-color:#bf5a5a; border-left-color:#bf5a5a; border-right-color:#4a1010; border-bottom-color:#4a1010; }
+.btn.b { background:#2a5a83; border-top-color:#5a8fbf; border-left-color:#5a8fbf; border-right-color:#102a4a; border-bottom-color:#102a4a; }
+.btn.orange { background:#8a5a00; border-top-color:#c8900a; border-left-color:#c8900a; border-right-color:#3a2000; border-bottom-color:#3a2000; }
 
-#compat-info {
-  font-size:7px; color:rgba(255,255,255,0.8); text-align:center;
-  line-height:2.3; margin-top:18px; z-index:1; max-width:300px;
-}
+#info { font-size:7px; color:rgba(255,255,255,.85); text-align:center; line-height:2.4; margin-top:16px; max-width:300px; }
 
 /* ── HUD ── */
 #hud { display:none; pointer-events:none; }
-#status-bar {
-  position:absolute; top:16px; left:50%; transform:translateX(-50%);
-  font-size:9px; color:#fff; background:rgba(0,0,0,0.6);
-  border:2px solid rgba(255,255,255,0.25); padding:7px 14px; white-space:nowrap;
-}
-#lidar-badge {
-  position:absolute; top:50px; left:50%; transform:translateX(-50%);
-  font-size:7px; background:rgba(0,0,0,0.5); padding:4px 10px; color:#5EE;
-}
-#voxel-info {
-  position:absolute; top:16px; left:12px;
-  font-size:8px; color:#5EE; line-height:2.1;
-  background:rgba(0,0,0,0.55); padding:8px 12px;
-}
-#crosshair {
-  position:absolute; top:50%; left:50%;
-  transform:translate(-50%,-50%);
-  width:22px; height:22px;
-}
-#crosshair::before,#crosshair::after {
-  content:''; position:absolute; background:rgba(255,255,255,0.85);
-}
-#crosshair::before { width:2px; height:100%; left:50%; transform:translateX(-50%); }
-#crosshair::after  { height:2px; width:100%; top:50%; transform:translateY(-50%); }
-#hud-controls {
-  position:absolute; bottom:28px; left:50%; transform:translateX(-50%);
-  display:flex; gap:10px; pointer-events:all;
-}
 
-/* ── Error Screen ── */
-#error-screen {
-  display:none; flex-direction:column;
-  align-items:center; justify-content:center;
-  background:rgba(0,0,0,0.93); padding:24px;
-}
-#error-msg { font-size:9px; color:#F66; text-align:center; line-height:2.2; max-width:300px; margin-bottom:24px; }
+#status { position:absolute; top:14px; left:50%; transform:translateX(-50%); font-size:9px; color:#fff; background:rgba(0,0,0,.6); border:2px solid rgba(255,255,255,.25); padding:7px 14px; white-space:nowrap; }
+#stat2  { position:absolute; top:48px; left:50%; transform:translateX(-50%); font-size:7px; color:#FA0; background:rgba(0,0,0,.5); padding:4px 10px; }
 
-/* pixel clouds */
-@keyframes cloudMove { from{transform:translateX(-150px)} to{transform:translateX(110vw)} }
-.cloud { position:absolute; background:#fff; opacity:0.88; border-radius:3px; }
+#overlay { position:absolute; top:14px; left:12px; font-size:8px; color:#5EE; line-height:2.2; background:rgba(0,0,0,.55); padding:8px 12px; }
+
+/* 照準 */
+#aim { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:60px; height:60px; }
+#aim::before,#aim::after { content:''; position:absolute; background:rgba(255,255,255,.8); }
+#aim::before { width:2px; height:100%; left:50%; transform:translateX(-50%); }
+#aim::after  { height:2px; width:100%; top:50%;  transform:translateY(-50%); }
+#aim-ring    { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:80px; height:80px; border:2px solid rgba(0,255,200,.5); border-radius:50%; }
+
+/* 距離パネル */
+#dist-panel {
+  position:absolute; bottom:120px; left:50%; transform:translateX(-50%);
+  background:rgba(0,0,0,.65); border:2px solid rgba(255,255,255,.2);
+  padding:10px 16px; text-align:center; pointer-events:all;
+  white-space:nowrap;
+}
+#dist-label { font-size:6px; color:#aaa; display:block; margin-bottom:6px; }
+#dist-range { width:180px; height:20px; cursor:pointer; }
+#dist-val   { font-size:10px; color:#5EE; margin-left:8px; }
+
+/* コントロール */
+#ctrl { position:absolute; bottom:24px; left:50%; transform:translateX(-50%); display:flex; gap:8px; pointer-events:all; flex-wrap:wrap; justify-content:center; }
+
+/* スキャンボタン押下 */
+#btn-scan.on { background:#1a4a1a !important; border-top-color:#0a2a0a !important; border-left-color:#0a2a0a !important; border-right-color:#5ab05a !important; border-bottom-color:#5ab05a !important; }
+
+/* ARリンク（非表示、JS から click()） */
+#ar-link { display:none; }
+
+/* エラー */
+#err { display:none; flex-direction:column; align-items:center; justify-content:center; background:rgba(0,0,0,.93); padding:24px; }
+#err-msg { font-size:9px; color:#F66; text-align:center; line-height:2.3; max-width:300px; margin-bottom:24px; }
+
+/* USDZ生成中オーバーレイ */
+#gen-overlay {
+  position:fixed; top:0; left:0; width:100%; height:100%; z-index:100;
+  background:rgba(0,0,0,.8); display:none; flex-direction:column;
+  align-items:center; justify-content:center; font-family:'Press Start 2P',monospace;
+}
+#gen-msg { font-size:10px; color:#5EE; text-align:center; line-height:2; }
+
+@keyframes cld { from{transform:translateX(-150px)} to{transform:translateX(110vw)} }
+.cld { position:absolute; background:#fff; opacity:.88; border-radius:3px; }
 </style>
 </head>
 <body>
 
-<canvas id="main-canvas"></canvas>
+<video id="cam" autoplay playsinline muted></video>
+<canvas id="cvs"></canvas>
 
-<!-- Start Screen -->
-<div class="layer" id="start-screen">
-  <div id="cloud-container" style="position:absolute;top:0;left:0;right:0;height:60%;overflow:hidden;pointer-events:none;"></div>
-  <div class="mc-logo">MICRA-CAM</div>
-  <div class="mc-sub">LiDAR × MINECRAFT<br><span style="font-size:.75em;color:rgba(255,255,255,.7)">現実空間をマイクラ化</span></div>
-  <button class="mc-btn green" id="btn-start">▶ AR スキャン開始</button>
-  <button class="mc-btn"       id="btn-demo" >🎮 デモモード</button>
-  <div id="compat-info">読込み中...</div>
+<!-- iOS Quick Look AR リンク（非表示） -->
+<a id="ar-link" rel="ar" href="#"></a>
+
+<!-- USDZ生成中表示 -->
+<div id="gen-overlay">
+  <div id="gen-msg">USDZ 生成中...<br><span id="gen-pct">0</span>%</div>
+</div>
+
+<!-- スタート画面 -->
+<div class="layer" id="start">
+  <div id="cld-wrap" style="position:absolute;top:0;left:0;right:0;height:60%;overflow:hidden;pointer-events:none;"></div>
+  <div class="logo">MICRA-CAM</div>
+  <div class="sub">カメラ × MINECRAFT<br><span style="font-size:.75em;color:rgba(255,255,255,.7)">現実空間をマイクラ化</span></div>
+  <button class="btn g" id="btn-begin">▶ スキャン開始</button>
+  <button class="btn"   id="btn-demo" >🎮 デモモード</button>
+  <div id="info">読込み中...</div>
 </div>
 
 <!-- HUD -->
 <div class="layer" id="hud">
-  <div id="status-bar">スキャン中...</div>
-  <div id="lidar-badge">LiDAR: 待機中</div>
-  <div id="voxel-info">
-    BLOCKS: <span id="block-count">0</span><br>
-    DEPTH: <span id="depth-val">--</span> m<br>
-    FPS: <span id="fps-val">--</span>
+  <div id="status">スキャン待機中</div>
+  <div id="stat2">iPhone を向けて ● スキャン を長押し</div>
+  <div id="overlay">
+    BLOCKS: <span id="bcnt">0</span><br>
+    距離: <span id="dval">2.0</span>m<br>
+    FPS: <span id="fps">--</span>
   </div>
-  <div id="crosshair"></div>
-  <div id="hud-controls">
-    <button class="mc-btn green" id="btn-toggle" style="font-size:8px;padding:10px">停止</button>
-    <button class="mc-btn red"   id="btn-clear"  style="font-size:8px;padding:10px">クリア</button>
-    <button class="mc-btn"       id="btn-exit"   style="font-size:8px;padding:10px">終了</button>
+  <div id="aim"></div>
+  <div id="aim-ring"></div>
+  <div id="dist-panel">
+    <span id="dist-label">← スキャン距離（壁までの距離に合わせる）→</span>
+    <input id="dist-range" type="range" min="0.3" max="5.0" step="0.1" value="2.0">
+    <span id="dist-val">2.0 m</span>
+  </div>
+  <div id="ctrl">
+    <button class="btn g"      id="btn-scan"  style="font-size:8px;padding:10px 12px">● スキャン</button>
+    <button class="btn orange" id="btn-ar"    style="font-size:8px;padding:10px 12px">🥽 ARで見る</button>
+    <button class="btn r"      id="btn-clear" style="font-size:8px;padding:10px 10px">クリア</button>
+    <button class="btn"        id="btn-exit"  style="font-size:8px;padding:10px 10px">終了</button>
   </div>
 </div>
 
-<!-- Error Screen -->
-<div class="layer" id="error-screen">
-  <div id="error-msg"></div>
-  <button class="mc-btn" id="btn-err-back">← 戻る</button>
+<!-- エラー -->
+<div class="layer" id="err">
+  <div id="err-msg"></div>
+  <button class="btn" id="btn-eback">← 戻る</button>
 </div>
 
-<!-- Three.js (global build — no module import needed) -->
+<!-- JSZip (USDZ packaging) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<!-- Three.js -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
 
 <script>
-// ─── Global error catcher (shows errors in UI before app init) ───────────────
-window.onerror = function(msg, src, line) {
-  setCompat('❌ JS エラー<br>' + msg + '<br>line ' + line);
-};
-window.addEventListener('unhandledrejection', function(e) {
-  setCompat('❌ 非同期エラー<br>' + (e.reason?.message || e.reason || '不明'));
-});
+// ── エラーキャッチ ────────────────────────────────────────────────────────
+window.onerror = function(m,s,l){ setInfo('❌ JS Error: '+m+' (L'+l+')'); };
+window.addEventListener('unhandledrejection',function(e){ setInfo('❌ Async: '+(e.reason&&e.reason.message||e.reason||'?')); });
 
-function setCompat(html) {
-  var el = document.getElementById('compat-info');
-  if (el) el.innerHTML = html;
-}
-function showError(msg) {
-  document.getElementById('error-msg').innerHTML = msg.replace(/\n/g,'<br>');
-  document.getElementById('error-screen').style.display = 'flex';
+function setInfo(h){ var el=document.getElementById('info'); if(el) el.innerHTML=h; }
+function showErr(msg){
+  document.getElementById('err-msg').innerHTML=msg.replace(/\n/g,'<br>');
+  document.getElementById('err').style.display='flex';
 }
 
-// ─── Boot ────────────────────────────────────────────────────────────────────
-// Wait for Three.js to be available
-(function boot() {
-  if (typeof THREE === 'undefined') {
-    setCompat('❌ 3Dライブラリ読込み失敗<br>ネット接続を確認してください');
-    return;
-  }
-  setCompat('✅ 3Dエンジン OK');
-  initApp();
-})();
+if(typeof THREE==='undefined'){ setInfo('❌ Three.js 読込み失敗'); }
+else if(typeof JSZip==='undefined'){ setInfo('❌ JSZip 読込み失敗'); }
+else { setInfo('✅ ライブラリ OK'); init(); }
 
-// ─── TEXTURE GENERATION ──────────────────────────────────────────────────────
-function makeTex(drawFn) {
-  var c = document.createElement('canvas');
-  c.width = c.height = 16;
-  drawFn(c.getContext('2d'));
-  var t = new THREE.CanvasTexture(c);
-  t.magFilter = THREE.NearestFilter;
-  t.minFilter = THREE.NearestFilter;
-  t.generateMipmaps = false;
+// ═══════════════════════════════════════════════════════════
+//  テクスチャ
+// ═══════════════════════════════════════════════════════════
+function lcg(s){ return function(){ s=(Math.imul(s,1664525)+1013904223)|0; return (s>>>0)/0x100000000; }; }
+function makeTex(fn){
+  var c=document.createElement('canvas'); c.width=c.height=16;
+  fn(c.getContext('2d'));
+  var t=new THREE.CanvasTexture(c);
+  t.magFilter=THREE.NearestFilter; t.minFilter=THREE.NearestFilter; t.generateMipmaps=false;
   return t;
-}
-function lcg(seed) {
-  var s = seed | 0;
-  return function() {
-    s = (Math.imul(s, 1664525) + 1013904223) | 0;
-    return (s >>> 0) / 0x100000000;
-  };
 }
 
 var TEX;
-function buildTextures() {
-  function grassTop() {
-    return makeTex(function(ctx) {
-      var r=lcg(1), pal=[[73,142,36],[58,128,28],[85,155,44],[66,135,32]];
-      for(var y=0;y<16;y++) for(var x=0;x<16;x++){var c=pal[r()*4|0];ctx.fillStyle='rgb('+c[0]+','+c[1]+','+c[2]+')';ctx.fillRect(x,y,1,1);}
-    });
-  }
-  function grassSide() {
-    return makeTex(function(ctx) {
-      var r=lcg(2),g=lcg(3);
-      for(var y=4;y<16;y++) for(var x=0;x<16;x++){var v=100+r()*40;ctx.fillStyle='rgb('+(v*.75|0)+','+(v*.52|0)+','+(v*.32|0)+')';ctx.fillRect(x,y,1,1);}
-      for(var y=0;y<4;y++) for(var x=0;x<16;x++){var v=g();ctx.fillStyle='rgb('+(63+v*22|0)+','+(135+v*20|0)+','+(30+v*14|0)+')';ctx.fillRect(x,y,1,1);}
-    });
-  }
-  function dirt() {
-    return makeTex(function(ctx) {
-      var r=lcg(4);
-      for(var y=0;y<16;y++) for(var x=0;x<16;x++){var v=108+r()*38;ctx.fillStyle='rgb('+(v*.75|0)+','+(v*.52|0)+','+(v*.32|0)+')';ctx.fillRect(x,y,1,1);}
-    });
-  }
-  function stone() {
-    return makeTex(function(ctx) {
-      var r=lcg(5);
-      for(var y=0;y<16;y++) for(var x=0;x<16;x++){var v=118+r()*26;ctx.fillStyle='rgb('+(v|0)+','+(v|0)+','+(v|0)+')';ctx.fillRect(x,y,1,1);}
-      ctx.strokeStyle='rgba(70,70,70,0.7)';ctx.lineWidth=1;ctx.beginPath();
-      ctx.moveTo(2,1);ctx.lineTo(5,5);ctx.lineTo(9,4);ctx.lineTo(12,8);
-      ctx.moveTo(0,10);ctx.lineTo(4,13);ctx.lineTo(8,11);ctx.lineTo(13,15);
-      ctx.stroke();
-    });
-  }
-  function cobble() {
-    return makeTex(function(ctx) {
-      var r=lcg(6);
-      for(var y=0;y<16;y++) for(var x=0;x<16;x++){var v=88+r()*32;ctx.fillStyle='rgb('+(v|0)+','+(v|0)+','+(v|0)+')';ctx.fillRect(x,y,1,1);}
-      ctx.strokeStyle='rgba(50,50,50,0.8)';ctx.lineWidth=1;
-      [[1,1,6,5],[8,0,6,4],[2,7,5,6],[9,6,6,5],[0,12,7,4],[8,12,7,4]].forEach(function(b){ctx.strokeRect(b[0]+.5,b[1]+.5,b[2],b[3]);});
-    });
-  }
-  function brick() {
-    return makeTex(function(ctx) {
-      ctx.fillStyle='#7a7a7a';ctx.fillRect(0,0,16,16);
-      var r=lcg(7),bp=[[160,60,38],[148,55,33],[172,66,42]];
-      for(var row=0;row<4;row++){var off=(row&1)*4;for(var col=-1;col<4;col++){var c=bp[r()*3|0];ctx.fillStyle='rgb('+c[0]+','+c[1]+','+c[2]+')';ctx.fillRect(col*8+off,row*4,7,3);}}
-    });
-  }
-  function sand() {
-    return makeTex(function(ctx) {
-      var r=lcg(8);
-      for(var y=0;y<16;y++) for(var x=0;x<16;x++){var v=208+r()*28;ctx.fillStyle='rgb('+(v|0)+','+(v*.94|0)+','+(v*.62|0)+')';ctx.fillRect(x,y,1,1);}
-    });
-  }
-  function woodPlank() {
-    return makeTex(function(ctx) {
-      var r=lcg(9);
-      for(var y=0;y<16;y++){var base=145+Math.floor(y/4)*8;for(var x=0;x<16;x++){var v=base+r()*16-8;ctx.fillStyle='rgb('+(v*.72|0)+','+(v*.52|0)+','+(v*.26|0)+')';ctx.fillRect(x,y,1,1);}if(y%4===0){ctx.fillStyle='rgba(70,40,10,.4)';ctx.fillRect(0,y,16,1);}}
-    });
-  }
-  function leaf() {
-    return makeTex(function(ctx) {
-      var r=lcg(10);
-      for(var y=0;y<16;y++) for(var x=0;x<16;x++){if(r()>0.12){var v=40+r()*55;ctx.fillStyle='rgb('+(v*.5|0)+','+(v|0)+','+(v*.3|0)+')';ctx.fillRect(x,y,1,1);}}
-    });
-  }
-  function bedrock() {
-    return makeTex(function(ctx) {
-      var r=lcg(11);
-      for(var y=0;y<16;y++) for(var x=0;x<16;x++){var v=40+r()*28;ctx.fillStyle='rgb('+(v|0)+','+(v|0)+','+(v|0)+')';ctx.fillRect(x,y,1,1);}
-      ctx.fillStyle='rgba(0,0,0,.55)';
-      [[2,2,3,2],[8,1,2,3],[13,3,2,2],[1,8,3,3],[7,9,2,2],[12,8,3,3]].forEach(function(b){ctx.fillRect(b[0],b[1],b[2],b[3]);});
-    });
-  }
-
-  TEX = {
-    grassTop:  grassTop(),
-    grassSide: grassSide(),
-    dirt:      dirt(),
-    stone:     stone(),
-    cobble:    cobble(),
-    brick:     brick(),
-    sand:      sand(),
-    woodPlank: woodPlank(),
-    leaf:      leaf(),
-    bedrock:   bedrock(),
+function buildTex(){
+  var r1=lcg(1),r2=lcg(2),r3=lcg(3),r4=lcg(4),r5=lcg(5),r6=lcg(6),r7=lcg(7),r8=lcg(8),r9=lcg(9);
+  TEX={
+    gt:makeTex(function(ctx){ var pal=[[73,142,36],[58,128,28],[85,155,44],[66,135,32]]; for(var y=0;y<16;y++)for(var x=0;x<16;x++){var c=pal[r1()*4|0];ctx.fillStyle='rgb('+c[0]+','+c[1]+','+c[2]+')';ctx.fillRect(x,y,1,1);} }),
+    gs:makeTex(function(ctx){ for(var y=4;y<16;y++)for(var x=0;x<16;x++){var v=100+r2()*40;ctx.fillStyle='rgb('+(v*.75|0)+','+(v*.52|0)+','+(v*.32|0)+')';ctx.fillRect(x,y,1,1);} for(var y=0;y<4;y++)for(var x=0;x<16;x++){var v=r3();ctx.fillStyle='rgb('+(60+v*25|0)+','+(132+v*22|0)+','+(28+v*16|0)+')';ctx.fillRect(x,y,1,1);} }),
+    di:makeTex(function(ctx){ for(var y=0;y<16;y++)for(var x=0;x<16;x++){var v=108+r4()*38;ctx.fillStyle='rgb('+(v*.75|0)+','+(v*.52|0)+','+(v*.32|0)+')';ctx.fillRect(x,y,1,1);} }),
+    st:makeTex(function(ctx){ for(var y=0;y<16;y++)for(var x=0;x<16;x++){var v=118+r5()*26;ctx.fillStyle='rgb('+(v|0)+','+(v|0)+','+(v|0)+')';ctx.fillRect(x,y,1,1);} ctx.strokeStyle='rgba(70,70,70,.7)';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(2,1);ctx.lineTo(5,5);ctx.lineTo(9,4);ctx.lineTo(12,8);ctx.moveTo(0,10);ctx.lineTo(4,13);ctx.lineTo(8,11);ctx.lineTo(13,15);ctx.stroke(); }),
+    br:makeTex(function(ctx){ ctx.fillStyle='#7a7a7a';ctx.fillRect(0,0,16,16); var bp=[[160,60,38],[148,55,33],[172,66,42]]; for(var row=0;row<4;row++){var off=(row&1)*4;for(var col=-1;col<4;col++){var c=bp[r6()*3|0];ctx.fillStyle='rgb('+c[0]+','+c[1]+','+c[2]+')';ctx.fillRect(col*8+off,row*4,7,3);}} }),
+    sa:makeTex(function(ctx){ for(var y=0;y<16;y++)for(var x=0;x<16;x++){var v=208+r7()*28;ctx.fillStyle='rgb('+(v|0)+','+(v*.94|0)+','+(v*.62|0)+')';ctx.fillRect(x,y,1,1);} }),
+    wp:makeTex(function(ctx){ for(var y=0;y<16;y++){var base=145+Math.floor(y/4)*8;for(var x=0;x<16;x++){var v=base+r8()*16-8;ctx.fillStyle='rgb('+(v*.72|0)+','+(v*.52|0)+','+(v*.26|0)+')';ctx.fillRect(x,y,1,1);}if(y%4===0){ctx.fillStyle='rgba(70,40,10,.4)';ctx.fillRect(0,y,16,1);}} }),
+    lf:makeTex(function(ctx){ for(var y=0;y<16;y++)for(var x=0;x<16;x++){if(r9()>0.12){var v=40+r9()*55;ctx.fillStyle='rgb('+(v*.5|0)+','+(v|0)+','+(v*.3|0)+')';ctx.fillRect(x,y,1,1);}} }),
   };
 }
 
-// ─── MATERIALS ───────────────────────────────────────────────────────────────
-var matCache = {};
-function mat(key) {
-  if (!matCache[key]) matCache[key] = new THREE.MeshLambertMaterial({ map: TEX[key] });
-  return matCache[key];
+var MC={};
+function buildMat(){
+  function M(k){ return MC[k]||(MC[k]=new THREE.MeshLambertMaterial({map:TEX[k]})); }
+  MC.grass=[M('gs'),M('gs'),M('gt'),M('di'),M('gs'),M('gs')];
+  MC.dirt =[M('di'),M('di'),M('di'),M('di'),M('di'),M('di')];
+  MC.stone=[M('st'),M('st'),M('st'),M('st'),M('st'),M('st')];
+  MC.brick=[M('br'),M('br'),M('br'),M('br'),M('br'),M('br')];
+  MC.sand =[M('sa'),M('sa'),M('sa'),M('sa'),M('sa'),M('sa')];
+  MC.wood =[M('wp'),M('wp'),M('wp'),M('wp'),M('wp'),M('wp')];
+  MC.leaf =[M('lf'),M('lf'),M('lf'),M('lf'),M('lf'),M('lf')];
 }
-function blockMats(type) {
-  switch (type) {
-    case 'grass':   return [mat('grassSide'),mat('grassSide'),mat('grassTop'),mat('dirt'),mat('grassSide'),mat('grassSide')];
-    case 'dirt':    return [mat('dirt'),mat('dirt'),mat('dirt'),mat('dirt'),mat('dirt'),mat('dirt')];
-    case 'stone':   return [mat('stone'),mat('stone'),mat('stone'),mat('stone'),mat('stone'),mat('stone')];
-    case 'cobble':  return [mat('cobble'),mat('cobble'),mat('cobble'),mat('cobble'),mat('cobble'),mat('cobble')];
-    case 'brick':   return [mat('brick'),mat('brick'),mat('brick'),mat('brick'),mat('brick'),mat('brick')];
-    case 'sand':    return [mat('sand'),mat('sand'),mat('sand'),mat('sand'),mat('sand'),mat('sand')];
-    case 'wood':    return [mat('woodPlank'),mat('woodPlank'),mat('woodPlank'),mat('woodPlank'),mat('woodPlank'),mat('woodPlank')];
-    case 'leaf':    return [mat('leaf'),mat('leaf'),mat('leaf'),mat('leaf'),mat('leaf'),mat('leaf')];
-    case 'bedrock': return [mat('bedrock'),mat('bedrock'),mat('bedrock'),mat('bedrock'),mat('bedrock'),mat('bedrock')];
-    default:        return [mat('stone'),mat('stone'),mat('stone'),mat('stone'),mat('stone'),mat('stone')];
-  }
-}
+function mats(t){ return MC[t]||MC.stone; }
 
-// ─── APP INIT ────────────────────────────────────────────────────────────────
-var renderer, scene, camera;
-var voxelData = {}, voxelMesh = {};
-var xrSession = null, xrRefSpace = null;
-var scanning = true, depthOK = false;
-var lastScan = 0, frameN = 0, lastFpsT = 0;
-var demoLoop = null;
+// ═══════════════════════════════════════════════════════════
+//  ボクセル
+// ═══════════════════════════════════════════════════════════
+var VS=0.20, MAXV=3000;
+var vdat={}, vmsh={};
+var geo;
 
-var VOXEL   = 0.20;   // 20 cm
-var MAX_V   = 5000;
-var MAX_D   = 5.0;    // max depth metres
-var D_SKIP  = 5;      // depth sample stride (pixels)
-var SCAN_MS = 80;
+function vk(ix,iy,iz){ return ix+'|'+iy+'|'+iz; }
+function w2i(wx,wy,wz){ return [Math.round(wx/VS),Math.round(wy/VS),Math.round(wz/VS)]; }
+function i2w(ix,iy,iz){ return new THREE.Vector3(ix*VS,iy*VS,iz*VS); }
+function btype(ix,iy,iz){ return vdat[vk(ix,iy+1,iz)]?'stone':'grass'; }
 
-function vkey(ix,iy,iz){ return ix+'_'+iy+'_'+iz; }
-function w2i(wx,wy,wz){ return [Math.round(wx/VOXEL), Math.round(wy/VOXEL), Math.round(wz/VOXEL)]; }
-function i2w(ix,iy,iz){ return new THREE.Vector3(ix*VOXEL, iy*VOXEL, iz*VOXEL); }
-
-function blockType(ix,iy,iz) {
-  return voxelData[vkey(ix,iy+1,iz)] ? 'stone' : 'grass';
+function addVox(wx,wy,wz){
+  var cnt=Object.keys(vdat).length;
+  if(cnt>=MAXV) return;
+  var idx=w2i(wx,wy,wz); var ix=idx[0],iy=idx[1],iz=idx[2];
+  var k=vk(ix,iy,iz);
+  if(vdat[k]) return;
+  vdat[k]=1;
+  var m=new THREE.Mesh(geo,mats(btype(ix,iy,iz)));
+  m.position.copy(i2w(ix,iy,iz));
+  scene.add(m); vmsh[k]=m;
+  var bk=vk(ix,iy-1,iz);
+  if(vmsh[bk]) vmsh[bk].material=mats(btype(ix,iy-1,iz));
+  document.getElementById('bcnt').textContent=cnt+1;
 }
 
-var blockGeo;
-function addVoxel(wx,wy,wz) {
-  var count = Object.keys(voxelData).length;
-  if (count >= MAX_V) return;
-  var idx = w2i(wx,wy,wz);
-  var ix=idx[0], iy=idx[1], iz=idx[2];
-  var k = vkey(ix,iy,iz);
-  if (voxelData[k]) return;
-  voxelData[k] = true;
-  var mesh = new THREE.Mesh(blockGeo, blockMats(blockType(ix,iy,iz)));
-  mesh.position.copy(i2w(ix,iy,iz));
-  scene.add(mesh);
-  voxelMesh[k] = mesh;
-  // update block below (might become stone)
-  var bk = vkey(ix,iy-1,iz);
-  if (voxelMesh[bk]) voxelMesh[bk].material = blockMats(blockType(ix,iy-1,iz));
-  document.getElementById('block-count').textContent = count + 1;
+function clearVox(){
+  for(var k in vmsh) scene.remove(vmsh[k]);
+  vdat={}; vmsh={};
+  document.getElementById('bcnt').textContent='0';
 }
 
-function clearVoxels() {
-  for (var k in voxelMesh) { scene.remove(voxelMesh[k]); }
-  voxelData = {}; voxelMesh = {};
-  document.getElementById('block-count').textContent = '0';
-}
+// ═══════════════════════════════════════════════════════════
+//  Three.js
+// ═══════════════════════════════════════════════════════════
+var renderer,scene,camera;
 
-// ─── MAIN INIT ───────────────────────────────────────────────────────────────
-function initApp() {
-  // Build textures
-  buildTextures();
+function init(){
+  buildTex(); buildMat();
 
-  // Three.js
-  var canvas = document.getElementById('main-canvas');
-  renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: false, alpha: true });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-  renderer.setSize(window.innerWidth, window.innerHeight);
-  renderer.xr.enabled = true;
+  var cvs=document.getElementById('cvs');
+  renderer=new THREE.WebGLRenderer({canvas:cvs, antialias:false, alpha:true});
+  renderer.setClearColor(0x000000,0);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+  renderer.setSize(window.innerWidth,window.innerHeight);
 
-  scene = new THREE.Scene();
-  scene.fog = new THREE.Fog(0x87CEEB, 12, 30);
+  scene=new THREE.Scene();
+  camera=new THREE.PerspectiveCamera(70,window.innerWidth/window.innerHeight,0.01,60);
+  camera.position.set(0,0,0);
 
-  camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.01, 60);
-  camera.position.set(0, 1.6, 0);
+  scene.add(new THREE.AmbientLight(0xffffff,0.8));
+  var sun=new THREE.DirectionalLight(0xFFF5E0,0.5); sun.position.set(5,8,3); scene.add(sun);
 
-  scene.add(new THREE.AmbientLight(0xffffff, 0.75));
-  var sun = new THREE.DirectionalLight(0xFFF5E0, 0.6);
-  sun.position.set(5, 8, 3); scene.add(sun);
-  var fill = new THREE.DirectionalLight(0xB0C8FF, 0.25);
-  fill.position.set(-3, 1, -4); scene.add(fill);
-
-  blockGeo = new THREE.BoxGeometry(VOXEL, VOXEL, VOXEL);
-
-  // Clouds on start screen
+  geo=new THREE.BoxGeometry(VS,VS,VS);
   makeClouds();
-
-  // Compat check (async)
   checkCompat();
+  bindUI();
 
-  // Resize
-  window.addEventListener('resize', function() {
-    camera.aspect = window.innerWidth / window.innerHeight;
+  window.addEventListener('resize',function(){
+    camera.aspect=window.innerWidth/window.innerHeight;
     camera.updateProjectionMatrix();
-    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setSize(window.innerWidth,window.innerHeight);
   });
-
-  // Buttons
-  document.getElementById('btn-start').addEventListener('click', startAR);
-  document.getElementById('btn-demo').addEventListener('click', startDemo);
-  document.getElementById('btn-toggle').addEventListener('click', toggleScan);
-  document.getElementById('btn-clear').addEventListener('click', clearVoxels);
-  document.getElementById('btn-exit').addEventListener('click', function() { if(xrSession) xrSession.end(); });
-  document.getElementById('btn-err-back').addEventListener('click', function() { document.getElementById('error-screen').style.display='none'; });
 }
 
-// ─── COMPAT CHECK ────────────────────────────────────────────────────────────
-function checkCompat() {
-  var lines = ['✅ 3Dエンジン OK'];
-  if (!navigator.xr) {
-    lines.push('❌ WebXR 非対応');
-    lines.push('Safari 15.4+ が必要です');
-    setCompat(lines.join('<br>'));
-    return;
+// ═══════════════════════════════════════════════════════════
+//  互換性確認
+// ═══════════════════════════════════════════════════════════
+function checkCompat(){
+  var lines=['✅ ライブラリ OK'];
+  if(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia) lines.push('✅ カメラAPI OK');
+  else lines.push('❌ カメラAPI なし (Safari で開いてください)');
+  if('DeviceOrientationEvent' in window) lines.push('✅ ジャイロ OK');
+  else lines.push('⚠ ジャイロ なし');
+  setInfo(lines.join('<br>'));
+}
+
+// ═══════════════════════════════════════════════════════════
+//  カメラ
+// ═══════════════════════════════════════════════════════════
+var camStream=null;
+function startCamera(){
+  return navigator.mediaDevices.getUserMedia({
+    video:{ facingMode:{exact:'environment'}, width:{ideal:1280}, height:{ideal:720} },
+    audio:false
+  }).catch(function(){
+    return navigator.mediaDevices.getUserMedia({video:true,audio:false});
+  }).then(function(stream){
+    camStream=stream;
+    var v=document.getElementById('cam');
+    v.srcObject=stream;
+    return v.play();
+  });
+}
+
+// ═══════════════════════════════════════════════════════════
+//  ジャイロ → カメラ回転
+// ═══════════════════════════════════════════════════════════
+var _q1=new THREE.Quaternion(-Math.sqrt(0.5),0,0,Math.sqrt(0.5));
+var _zee=new THREE.Vector3(0,0,1);
+var _euler=new THREE.Euler();
+var _q0=new THREE.Quaternion(), _q2=new THREE.Quaternion();
+var gyroOK=false;
+
+function onGyro(e){
+  if(!e.alpha&&!e.beta&&!e.gamma) return;
+  gyroOK=true;
+  var a=THREE.MathUtils.degToRad(e.alpha||0);
+  var b=THREE.MathUtils.degToRad(e.beta||0);
+  var g=THREE.MathUtils.degToRad(e.gamma||0);
+  _euler.set(b,a,-g,'YXZ');
+  _q0.setFromEuler(_euler);
+  _q2.setFromAxisAngle(_zee,0);
+  camera.quaternion.copy(_q0.multiply(_q1).multiply(_q2));
+}
+
+function enableGyro(){
+  if(typeof DeviceOrientationEvent==='undefined') return Promise.resolve(false);
+  if(typeof DeviceOrientationEvent.requestPermission==='function'){
+    return DeviceOrientationEvent.requestPermission().then(function(s){
+      if(s==='granted'){ window.addEventListener('deviceorientation',onGyro,true); return true; }
+      return false;
+    }).catch(function(){ return false; });
+  } else {
+    window.addEventListener('deviceorientation',onGyro,true);
+    return Promise.resolve(true);
   }
-  lines.push('✅ WebXR あり');
-  navigator.xr.isSessionSupported('immersive-ar').then(function(ok) {
-    lines.push(ok ? '✅ AR 対応' : '❌ AR 非対応 (Safari で開いてください)');
-    setCompat(lines.join('<br>'));
-  }).catch(function(e) {
-    lines.push('⚠ AR 確認失敗: ' + e.message);
-    setCompat(lines.join('<br>'));
-  });
 }
 
-// ─── AR SESSION ──────────────────────────────────────────────────────────────
-function startAR() {
-  if (!navigator.xr) { showError('WebXR が非対応です。\nSafari 15.4+ でお試しください。'); return; }
+// ═══════════════════════════════════════════════════════════
+//  スキャン
+// ═══════════════════════════════════════════════════════════
+var scanDist=2.0, scanInterval=null;
+var _spread=[[0,0],[0.025,0],[-0.025,0],[0,0.025],[0,-0.025],[0.05,0],[-0.05,0],[0,0.05],[0,-0.05]];
 
-  navigator.xr.isSessionSupported('immersive-ar').then(function(ok) {
-    if (!ok) { showError('AR セッション非対応です。\niPhone 12+ の Safari で\nお試しください。'); return; }
+function scanOnce(){
+  for(var i=0;i<_spread.length;i++){
+    var dx=_spread[i][0], dy=_spread[i][1];
+    var d=new THREE.Vector3(dx,dy,-1).applyQuaternion(camera.quaternion).normalize();
+    var jitter=(Math.random()-.5)*0.08;
+    var p=camera.position.clone().addScaledVector(d,scanDist+jitter);
+    addVox(p.x,p.y,p.z);
+  }
+}
 
-    // First try with depth-sensing optional
-    navigator.xr.requestSession('immersive-ar', {
-      requiredFeatures: ['local-floor'],
-      optionalFeatures: ['depth-sensing'],
-      depthSensing: {
-        usagePreference: ['cpu-optimized'],
-        dataFormatPreference: ['luminance-alpha'],
-      }
-    }).catch(function() {
-      // Fallback: no depth sensing
-      return navigator.xr.requestSession('immersive-ar', {
-        requiredFeatures: ['local-floor']
+function startScan(){
+  if(scanInterval) return;
+  document.getElementById('btn-scan').classList.add('on');
+  document.getElementById('status').textContent='スキャン中...';
+  scanInterval=setInterval(scanOnce,60);
+}
+function stopScan(){
+  if(scanInterval){ clearInterval(scanInterval); scanInterval=null; }
+  document.getElementById('btn-scan').classList.remove('on');
+  document.getElementById('status').textContent='スキャン一時停止';
+}
+
+// ═══════════════════════════════════════════════════════════
+//  USDZ エクスポート → iOS Quick Look AR
+// ═══════════════════════════════════════════════════════════
+var currentBlobUrl=null;
+
+function generateUSDA(){
+  var keys=Object.keys(vdat);
+  if(keys.length===0) return null;
+
+  // ブロックの最小Y（ARの床に合わせるオフセット）
+  var minY=Infinity;
+  for(var i=0;i<keys.length;i++){
+    var p=keys[i].split('|');
+    var iy=parseInt(p[1]);
+    if(iy<minY) minY=iy;
+  }
+
+  // マテリアル定義
+  var mDefs=[
+    { name:'GrassMat', r:0.36, g:0.56, b:0.14 },
+    { name:'StoneMat', r:0.46, g:0.46, b:0.46 },
+    { name:'DirtMat',  r:0.55, g:0.38, b:0.22 },
+    { name:'SandMat',  r:0.82, g:0.74, b:0.40 },
+    { name:'BrickMat', r:0.63, g:0.24, b:0.15 },
+    { name:'WoodMat',  r:0.52, g:0.37, b:0.18 },
+    { name:'LeafMat',  r:0.22, g:0.50, b:0.12 },
+  ];
+  var matTypeMap={ grass:'GrassMat', stone:'StoneMat', dirt:'DirtMat', sand:'SandMat', brick:'BrickMat', wood:'WoodMat', leaf:'LeafMat' };
+
+  var lines=[
+    '#usda 1.0',
+    '(',
+    '    defaultPrim = "Root"',
+    '    metersPerUnit = 1.0',
+    '    upAxis = "Y"',
+    ')',
+    '',
+    'def Xform "Root"',
+    '{'
+  ];
+
+  // 各ボクセルをCubeとして追加
+  for(var i=0;i<keys.length;i++){
+    var p=keys[i].split('|');
+    var ix=parseInt(p[0]), iy=parseInt(p[1]), iz=parseInt(p[2]);
+    // Y をオフセット（床=0）
+    var wx=(ix*VS).toFixed(3);
+    var wy=((iy-minY)*VS+VS*0.5).toFixed(3);
+    var wz=(iz*VS).toFixed(3);
+    var t=btype(ix,iy,iz);
+    var matRef=matTypeMap[t]||'StoneMat';
+    lines.push(
+      '    def Cube "B'+i+'"',
+      '    {',
+      '        double size = '+VS,
+      '        double3 xformOp:translate = ('+wx+', '+wy+', '+wz+')',
+      '        uniform token[] xformOpOrder = ["xformOp:translate"]',
+      '        rel material:binding = </Root/'+matRef+'>',
+      '    }'
+    );
+  }
+
+  // マテリアル
+  for(var j=0;j<mDefs.length;j++){
+    var m=mDefs[j];
+    lines.push(
+      '    def Material "'+m.name+'"',
+      '    {',
+      '        token outputs:surface.connect = </Root/'+m.name+'/S.outputs:surface>',
+      '        def Shader "S"',
+      '        {',
+      '            uniform token info:id = "UsdPreviewSurface"',
+      '            color3f inputs:diffuseColor = ('+m.r.toFixed(3)+', '+m.g.toFixed(3)+', '+m.b.toFixed(3)+')',
+      '            float inputs:roughness = 0.9',
+      '            float inputs:metallic = 0.0',
+      '            token outputs:surface',
+      '        }',
+      '    }'
+    );
+  }
+
+  lines.push('}');
+  return lines.join('\n');
+}
+
+function viewInAR(){
+  var cnt=Object.keys(vdat).length;
+  if(cnt===0){ showErr('まずスキャンしてブロックを\n配置してください'); return; }
+
+  var overlay=document.getElementById('gen-overlay');
+  document.getElementById('gen-pct').textContent='0';
+  overlay.style.display='flex';
+
+  // 少し遅延してUIを更新してから処理
+  setTimeout(function(){
+    try{
+      var usda=generateUSDA();
+      document.getElementById('gen-pct').textContent='50';
+
+      var zip=new JSZip();
+      zip.file('scene.usda', usda, {compression:'STORE'});
+
+      zip.generateAsync({type:'arraybuffer', compression:'STORE'}).then(function(buf){
+        document.getElementById('gen-pct').textContent='90';
+        var blob=new Blob([buf],{type:'model/vnd.usdz+zip'});
+
+        if(currentBlobUrl) URL.revokeObjectURL(currentBlobUrl);
+        currentBlobUrl=URL.createObjectURL(blob);
+
+        var link=document.getElementById('ar-link');
+        link.href=currentBlobUrl;
+        document.getElementById('gen-pct').textContent='100';
+
+        setTimeout(function(){
+          overlay.style.display='none';
+          link.click(); // iOS Quick Look を起動
+        },300);
+      }).catch(function(e){
+        overlay.style.display='none';
+        showErr('USDZ生成エラー:\n'+e.message);
       });
-    }).then(function(session) {
-      onSessionStart(session);
-    }).catch(function(e) {
-      showError('AR 開始エラー:\n' + e.message);
-    });
-  }).catch(function(e) {
-    showError('AR 確認エラー:\n' + e.message);
+    } catch(e){
+      overlay.style.display='none';
+      showErr('エクスポートエラー:\n'+e.message);
+    }
+  },50);
+}
+
+// ═══════════════════════════════════════════════════════════
+//  スキャン開始フロー
+// ═══════════════════════════════════════════════════════════
+function beginScan(){
+  startCamera().then(function(){
+    return enableGyro();
+  }).then(function(ok){
+    document.getElementById('start').style.display='none';
+    document.getElementById('hud').style.display='block';
+    document.getElementById('stat2').textContent = ok
+      ? 'ジャイロ ON — 向けて長押しでスキャン'
+      : 'ジャイロ OFF — 固定視点でスキャン';
+    document.getElementById('status').textContent='準備完了';
+    renderer.setAnimationLoop(renderLoop);
+  }).catch(function(e){
+    showErr('カメラ起動エラー:\n'+e.message+'\n\nSafari の設定でカメラを許可してください');
   });
 }
 
-function onSessionStart(session) {
-  xrSession = session;
-  depthOK = !!(session.depthUsage);
+var _fn=0,_ft=0;
+function renderLoop(t){
+  _fn++;
+  if(t-_ft>1000){ document.getElementById('fps').textContent=_fn; _fn=0; _ft=t; }
+  renderer.render(scene,camera);
+}
 
-  renderer.xr.setReferenceSpaceType('local-floor');
-  renderer.xr.setSession(session).then(function() {
-    session.requestReferenceSpace('local-floor').catch(function() {
-      return session.requestReferenceSpace('local');
-    }).then(function(refSpace) {
-      xrRefSpace = refSpace;
-      session.addEventListener('end', onSessionEnd);
+// ═══════════════════════════════════════════════════════════
+//  デモモード
+// ═══════════════════════════════════════════════════════════
+var demoRaf=null;
+function startDemo(){
+  document.getElementById('start').style.display='none';
+  document.getElementById('hud').style.display='block';
+  document.getElementById('stat2').textContent='デモ表示中 (カメラ不使用)';
+  document.getElementById('status').textContent='デモモード';
+  document.getElementById('btn-scan').style.display='none';
+  document.getElementById('dist-panel').style.display='none';
 
-      document.getElementById('start-screen').style.display = 'none';
-      document.getElementById('hud').style.display = 'block';
+  camera.position.set(0,1.4,2.4);
+  camera.lookAt(0,0,0);
 
-      var badge = document.getElementById('lidar-badge');
-      badge.textContent = depthOK ? '✓ LiDAR 有効 — スキャン中' : '⚠ LiDAR 無効 (非対応機種)';
-      badge.style.color  = depthOK ? '#5EE' : '#FA5';
-
-      renderer.setAnimationLoop(onXRFrame);
-    });
+  for(var x=-4;x<=4;x++) for(var z=-4;z<=4;z++) addVox(x*VS,0,z*VS);
+  [[1,1,1],[1,2,1],[2,1,1],[2,2,2],[2,3,2],[-2,1,-1],[-2,2,-1],[0,1,-2],[0,2,-2],[0,3,-2]].forEach(function(p){
+    addVox(p[0]*VS,p[1]*VS,p[2]*VS);
   });
+
+  var angle=0;
+  function loop(){
+    angle+=0.004;
+    camera.position.set(Math.sin(angle)*3.5,1.6,Math.cos(angle)*3.5);
+    camera.lookAt(0,0.2,0);
+    renderer.render(scene,camera);
+    demoRaf=requestAnimationFrame(loop);
+  }
+  demoRaf=requestAnimationFrame(loop);
 }
 
-// Reusable math objects
-var _m4a = new THREE.Matrix4();
-var _m4b = new THREE.Matrix4();
-var _v4  = new THREE.Vector4();
-var _v3  = new THREE.Vector3();
-
-function processDepth(depthInfo, view) {
-  var dw = depthInfo.width, dh = depthInfo.height;
-  _m4a.fromArray(view.projectionMatrix).invert();   // inv projection
-  _m4b.fromArray(view.transform.matrix);            // view → world
-
-  for (var py = 0; py < dh; py += D_SKIP) {
-    for (var px = 0; px < dw; px += D_SKIP) {
-      var u = (px + 0.5) / dw;
-      var v = (py + 0.5) / dh;
-      var depth = depthInfo.getDepthInMeters(u, v);
-      if (!isFinite(depth) || depth < 0.15 || depth > MAX_D) continue;
-
-      // NDC → view-space direction
-      var ndcX =  u * 2 - 1;
-      var ndcY = -(v * 2 - 1);
-      _v4.set(ndcX, ndcY, -1, 1).applyMatrix4(_m4a);
-      _v3.set(_v4.x/_v4.w, _v4.y/_v4.w, _v4.z/_v4.w).normalize().multiplyScalar(depth);
-
-      // View → world
-      _v4.set(_v3.x, _v3.y, _v3.z, 1).applyMatrix4(_m4b);
-      addVoxel(_v4.x, _v4.y, _v4.z);
-    }
-  }
-  document.getElementById('depth-val').textContent = depthInfo.getDepthInMeters(0.5, 0.5).toFixed(2);
-}
-
-function onXRFrame(time, frame) {
-  frameN++;
-  if (time - lastFpsT > 1000) {
-    document.getElementById('fps-val').textContent = frameN;
-    frameN = 0; lastFpsT = time;
-  }
-  if (!frame) { renderer.render(scene, camera); return; }
-
-  var pose = frame.getViewerPose(xrRefSpace);
-  if (!pose) { renderer.render(scene, camera); return; }
-
-  if (scanning && depthOK && (time - lastScan) > SCAN_MS) {
-    lastScan = time;
-    var views = pose.views;
-    for (var i = 0; i < views.length; i++) {
-      var di = frame.getDepthInformation && frame.getDepthInformation(views[i]);
-      if (di) processDepth(di, views[i]);
-    }
-  }
-  renderer.render(scene, camera);
-}
-
-function onSessionEnd() {
-  xrSession = null;
+// ═══════════════════════════════════════════════════════════
+//  UI バインド
+// ═══════════════════════════════════════════════════════════
+function exitScan(){
+  stopScan();
   renderer.setAnimationLoop(null);
-  document.getElementById('hud').style.display = 'none';
-  document.getElementById('start-screen').style.display = 'flex';
+  if(demoRaf){ cancelAnimationFrame(demoRaf); demoRaf=null; }
+  if(camStream){ camStream.getTracks().forEach(function(t){t.stop();}); camStream=null; }
+  document.getElementById('cam').srcObject=null;
+  window.removeEventListener('deviceorientation',onGyro,true);
+  clearVox();
+  document.getElementById('hud').style.display='none';
+  document.getElementById('btn-scan').style.display='';
+  document.getElementById('dist-panel').style.display='';
+  document.getElementById('start').style.display='flex';
+  checkCompat();
 }
 
-function toggleScan() {
-  scanning = !scanning;
-  document.getElementById('btn-toggle').textContent  = scanning ? '停止' : '再開';
-  document.getElementById('status-bar').textContent  = scanning ? 'スキャン中...' : '一時停止';
-}
+function bindUI(){
+  document.getElementById('btn-begin').addEventListener('click',beginScan);
+  document.getElementById('btn-demo' ).addEventListener('click',startDemo);
+  document.getElementById('btn-ar'   ).addEventListener('click',viewInAR);
+  document.getElementById('btn-clear').addEventListener('click',clearVox);
+  document.getElementById('btn-exit' ).addEventListener('click',exitScan);
+  document.getElementById('btn-eback').addEventListener('click',function(){ document.getElementById('err').style.display='none'; });
 
-// ─── DEMO MODE ───────────────────────────────────────────────────────────────
-function startDemo() {
-  document.getElementById('start-screen').style.display = 'none';
-  document.getElementById('hud').style.display = 'block';
-  document.getElementById('lidar-badge').textContent = '🎮 デモモード';
-  document.getElementById('lidar-badge').style.color = '#FF5';
-  document.getElementById('status-bar').textContent  = 'デモ表示中';
-  document.getElementById('btn-toggle').style.display = 'none';
+  var sb=document.getElementById('btn-scan');
+  sb.addEventListener('touchstart',function(e){ e.preventDefault(); startScan(); },{passive:false});
+  sb.addEventListener('touchend',  function(e){ e.preventDefault(); stopScan();  },{passive:false});
+  sb.addEventListener('mousedown', startScan);
+  sb.addEventListener('mouseup',   stopScan);
 
-  camera.position.set(0, 1.4, 2.4);
-  camera.lookAt(0, 0, 0);
-
-  // Ground plane 7×7
-  for (var x=-3; x<=3; x++) for (var z=-3; z<=3; z++) addVoxel(x*VOXEL, 0, z*VOXEL);
-  // Hills
-  [[1,1,1],[1,2,1],[2,1,1],[-2,1,-1],[-2,2,-1],[0,1,-2],[0,2,-2],[0,3,-2]].forEach(function(p){
-    addVoxel(p[0]*VOXEL, p[1]*VOXEL, p[2]*VOXEL);
+  document.getElementById('dist-range').addEventListener('input',function(){
+    scanDist=parseFloat(this.value);
+    document.getElementById('dist-val').textContent=scanDist.toFixed(1)+' m';
+    document.getElementById('dval').textContent=scanDist.toFixed(1);
   });
-
-  var angle = 0;
-  function loop() {
-    angle += 0.004;
-    camera.position.set(Math.sin(angle)*3.5, 1.6, Math.cos(angle)*3.5);
-    camera.lookAt(0, 0.2, 0);
-    renderer.render(scene, camera);
-    if (!xrSession) demoLoop = requestAnimationFrame(loop);
-  }
-  demoLoop = requestAnimationFrame(loop);
-
-  // Exit demo
-  document.getElementById('btn-exit').addEventListener('click', function exitDemo() {
-    if (demoLoop) { cancelAnimationFrame(demoLoop); demoLoop = null; }
-    clearVoxels();
-    document.getElementById('hud').style.display = 'none';
-    document.getElementById('start-screen').style.display = 'flex';
-    document.getElementById('btn-toggle').style.display = '';
-    document.getElementById('btn-exit').removeEventListener('click', exitDemo);
-  }, { once: true });
 }
 
-// ─── PIXEL CLOUDS ────────────────────────────────────────────────────────────
-function makeClouds() {
-  var cont = document.getElementById('cloud-container');
-  for (var i = 0; i < 6; i++) {
-    var el = document.createElement('div');
-    var w = 48 + Math.random()*90, h = 18 + Math.random()*22;
-    el.className = 'cloud';
-    el.style.cssText = 'width:'+w+'px;height:'+h+'px;top:'+(Math.random()*50)+'%;'
-      +'left:'+(Math.random()*100)+'%;'
-      +'animation:cloudMove '+(18+Math.random()*22)+'s linear infinite;'
-      +'animation-delay:-'+(Math.random()*22)+'s;';
-    cont.appendChild(el);
+// ── 雲 ────────────────────────────────────────────────────────────────────
+function makeClouds(){
+  var w=document.getElementById('cld-wrap');
+  for(var i=0;i<6;i++){
+    var el=document.createElement('div');
+    var cw=50+Math.random()*90, ch=18+Math.random()*22;
+    el.className='cld';
+    el.style.cssText='width:'+cw+'px;height:'+ch+'px;top:'+(Math.random()*50)+'%;left:'+(Math.random()*100)+'%;animation:cld '+(18+Math.random()*22)+'s linear infinite;animation-delay:-'+(Math.random()*22)+'s;';
+    w.appendChild(el);
   }
 }
 </script>
