@@ -166,9 +166,13 @@ function showErr(msg){
   document.getElementById('err').style.display='flex';
 }
 
-if(typeof THREE==='undefined'){ setInfo('❌ Three.js 読込み失敗'); }
-else if(typeof JSZip==='undefined'){ setInfo('❌ JSZip 読込み失敗'); }
-else { setInfo('✅ ライブラリ OK'); init(); }
+if(typeof THREE==='undefined'){ setInfo('❌ Three.js 読込み失敗<br>ネット接続を確認してください'); }
+else if(typeof JSZip==='undefined'){ setInfo('❌ JSZip 読込み失敗<br>ネット接続を確認してください'); }
+else {
+  setInfo('✅ ライブラリ OK');
+  try { init(); }
+  catch(e){ setInfo('❌ 初期化エラー:<br>'+e.message+'<br>L'+(e.lineNumber||'?')); }
+}
 
 // ═══════════════════════════════════════════════════════════
 //  テクスチャ
@@ -197,18 +201,32 @@ function buildTex(){
   };
 }
 
-var MC={};
+// マテリアル（明示的な変数 — MC[k] クロージャ問題を回避）
+var matGrass, matStone, matDirt, matSand, matBrick, matWood, matLeaf, matFallback;
+
 function buildMat(){
-  function M(k){ return MC[k]||(MC[k]=new THREE.MeshLambertMaterial({map:TEX[k]})); }
-  MC.grass=[M('gs'),M('gs'),M('gt'),M('di'),M('gs'),M('gs')];
-  MC.dirt =[M('di'),M('di'),M('di'),M('di'),M('di'),M('di')];
-  MC.stone=[M('st'),M('st'),M('st'),M('st'),M('st'),M('st')];
-  MC.brick=[M('br'),M('br'),M('br'),M('br'),M('br'),M('br')];
-  MC.sand =[M('sa'),M('sa'),M('sa'),M('sa'),M('sa'),M('sa')];
-  MC.wood =[M('wp'),M('wp'),M('wp'),M('wp'),M('wp'),M('wp')];
-  MC.leaf =[M('lf'),M('lf'),M('lf'),M('lf'),M('lf'),M('lf')];
+  function lm(k){
+    var tex = TEX ? TEX[k] : null;
+    return new THREE.MeshLambertMaterial({map: tex || null});
+  }
+  matGrass   = [lm('gs'),lm('gs'),lm('gt'),lm('di'),lm('gs'),lm('gs')];
+  matStone   = [lm('st'),lm('st'),lm('st'),lm('st'),lm('st'),lm('st')];
+  matDirt    = [lm('di'),lm('di'),lm('di'),lm('di'),lm('di'),lm('di')];
+  matSand    = [lm('sa'),lm('sa'),lm('sa'),lm('sa'),lm('sa'),lm('sa')];
+  matBrick   = [lm('br'),lm('br'),lm('br'),lm('br'),lm('br'),lm('br')];
+  matWood    = [lm('wp'),lm('wp'),lm('wp'),lm('wp'),lm('wp'),lm('wp')];
+  matLeaf    = [lm('lf'),lm('lf'),lm('lf'),lm('lf'),lm('lf'),lm('lf')];
+  matFallback= new THREE.MeshLambertMaterial({color:0x888888});
 }
-function mats(t){ return MC[t]||MC.stone; }
+function mats(t){
+  if(t==='grass') return matGrass||[matFallback];
+  if(t==='dirt' ) return matDirt ||[matFallback];
+  if(t==='sand' ) return matSand ||[matFallback];
+  if(t==='brick') return matBrick||[matFallback];
+  if(t==='wood' ) return matWood ||[matFallback];
+  if(t==='leaf' ) return matLeaf ||[matFallback];
+  return matStone||[matFallback];
+}
 
 // ═══════════════════════════════════════════════════════════
 //  ボクセル
@@ -249,7 +267,8 @@ function clearVox(){
 var renderer,scene,camera;
 
 function init(){
-  buildTex(); buildMat();
+  try { buildTex(); } catch(e){ setInfo('❌ テクスチャ生成エラー:<br>'+e.message); return; }
+  try { buildMat(); } catch(e){ setInfo('❌ マテリアル生成エラー:<br>'+e.message); return; }
 
   var cvs=document.getElementById('cvs');
   renderer=new THREE.WebGLRenderer({canvas:cvs, antialias:false, alpha:true});
