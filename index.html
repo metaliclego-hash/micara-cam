@@ -342,18 +342,53 @@ function setErr(msg){
   document.getElementById('err-msg').innerHTML=msg.replace(/\n/g,'<br>');
 }
 
+var PAGE_URL = 'https://metaliclego-hash.github.io/micara-cam/';
+
 document.getElementById('start-btn').addEventListener('click',function(){
   this.disabled=true; this.textContent='起動中...';
   setErr('');
 
-  if(!navigator.xr){
-    setErr('WebXR が見つかりません。\nSafari で開いてください。');
+  // HTTPS 以外では WebXR は動かない
+  if(location.protocol !== 'https:'){
+    setErr(
+      '⚠ HTTPS が必要です<br><br>'
+      +'Safariのアドレスバーに<br>以下のURLを入力してください：<br><br>'
+      +'<b style="color:#5af;font-size:12px">'+PAGE_URL+'</b>'
+    );
     this.disabled=false; this.textContent='スキャン開始'; return;
   }
+
+  // ブラウザ判定（Chrome iOS は CriOS, LINE は Line を含む）
+  var ua=navigator.userAgent;
+  if(/CriOS|FxiOS|Line/.test(ua)){
+    setErr(
+      '⚠ このブラウザは非対応です<br><br>'
+      +'<b>Safari</b> で開いてください<br><br>'
+      +'Safari のアドレスバーに：<br>'
+      +'<b style="color:#5af;font-size:12px">'+PAGE_URL+'</b>'
+    );
+    this.disabled=false; this.textContent='スキャン開始'; return;
+  }
+
+  if(!navigator.xr){
+    setErr(
+      '⚠ WebXR が見つかりません<br><br>'
+      +'iOS 16 以上の Safari が必要です<br><br>'
+      +'または：設定 › Safari › 詳細<br>› 機能フラグ › WebXR をオン'
+    );
+    this.disabled=false; this.textContent='スキャン開始'; return;
+  }
+
   navigator.xr.isSessionSupported('immersive-ar').then(function(ok){
     if(ok){ startXR(); }
     else{
-      setErr('immersive-ar 非対応です。\n設定 › Safari › 詳細 › 機能フラグ\n→ WebXR をオンにしてください。');
+      setErr(
+        '⚠ AR が非対応です<br><br>'
+        +'設定 › Safari › 詳細<br>'
+        +'› 機能フラグ（Experimental Features）<br>'
+        +'› <b>WebXR AR モジュール</b> をオン<br><br>'
+        +'iOS 16 / Safari 16 以上が必要'
+      );
       document.getElementById('start-btn').disabled=false;
       document.getElementById('start-btn').textContent='スキャン開始';
     }
